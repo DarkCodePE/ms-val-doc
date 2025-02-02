@@ -12,7 +12,7 @@ import logging
 import cv2
 
 from app.agent.state.state import SignatureValidationDetails, DocumentValidationResponse
-from app.agent.tools.tools import find_signature_bounding_boxes
+from app.agent.tools.signature_detect import find_signature_bounding_boxes
 from app.config.config import get_settings
 from app.providers.llm_manager import LLMConfig, LLMManager, LLMType
 

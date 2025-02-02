@@ -23,10 +23,13 @@ class JudgeAgent:
 
     async def validate(self, state: DocumentValidationResponse) -> dict:
         structured_llm = self.primary_llm.with_structured_output(VerdictResponse)
+        total_found = sum(sig["metadata"]["signatures_found"] for sig in state["signature_diagnosis"])
+
         system_instructions = VERDICT_PROMPT.format(
             logo_diagnosis=state["logo_diagnosis"],
-            valid_data=state["valid_data"],
-            signature_diagnosis=state["signature_diagnosis"]
+            date_of_issuance=state["valid_data"]["date_of_issuance"],
+            validity=state["valid_data"]["validity"],
+            total_found=total_found,
         )
         logger.debug(f"Judge Prompt: {system_instructions}")
         result = structured_llm.invoke([

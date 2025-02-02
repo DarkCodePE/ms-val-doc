@@ -61,7 +61,7 @@ class LogoAgent:
 
         return base64_images
 
-    async def verify_signatures(self, state: DocumentValidationResponse) -> dict:
+    async def verify_logo(self, state: DocumentValidationResponse) -> dict:
         """Verify signatures using multimodal LLM and OpenCV"""
         try:
             # Get base64 images of all pages
@@ -76,15 +76,16 @@ class LogoAgent:
                 # Convert base64 image to PIL Image
                 structured_llm = self.primary_llm.with_structured_output(LogoValidationDetails)
                 system_instructions = LOGO_DETECTION_PROMPT.format(
-                    enterprise=state["valid_data"]["enterprise"]
+                    enterprise=state["valid_data"]["enterprise"],
+                    company=state["valid_data"]["company"],
+                    document_data=state["document_data"]
                 )
                 logger.debug(f"System instructions: {system_instructions}")
                 human_message = HumanMessage(
                     content=[
                         {
                             "type": "text",
-                            "text": "Identifica si hay firmas en esta página. "
-                                    "Si hay, describe su ubicación y características."
+                            "text": "Identifica si hay logotipo en esta página. "
                         },
                         {
                             "type": "image_url",
@@ -97,12 +98,13 @@ class LogoAgent:
                     human_message
                 ])
                 signatures_found.append(response)
+
             state["logo_diagnosis"] = signatures_found
             # Return verification results
             return state
 
         except Exception as e:
-            logger.error(f"Error verifying signatures: {str(e)}")
+            logger.error(f"Error verifying logo: {str(e)}")
             raise
 
     def cleanup(self):

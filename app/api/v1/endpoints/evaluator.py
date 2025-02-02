@@ -251,7 +251,6 @@ async def extract_pdf_text(file: UploadFile) -> str:
         await file.seek(0)
 
 
-
 @router.post("/v2/validate", response_model=dict)
 async def validate_document(
         file: UploadFile = File(...),
@@ -277,7 +276,7 @@ async def validate_document(
 
         # Extract text content from PDF
         document_text = await extract_pdf_text(file)
-
+        logger.info(f"Extracted text: {document_text}")
         # Initial state
         initial_state: DocumentValidationResponse = {
             "file": file,
@@ -289,7 +288,7 @@ async def validate_document(
                 "enterprise": "",
                 "policy_number": "",
                 "company": "",
-                "metadata": {}
+                "date_of_issuance": ""
             },
             "logo_diagnosis": [],
             "signature_diagnosis": [],
@@ -312,18 +311,13 @@ async def validate_document(
 
         # Format response
         response = {
-            "document_info": {
-                "filename": file.filename,
-                "processed_at": datetime.now().isoformat(),
-                "enterprise": result["valid_data"]["enterprise"],
-                "policy_number": result["valid_data"]["policy_number"]
-            },
             "validation_results": {
                 "valid_data": {
                     "validity": result["valid_data"]["validity"],
-                    "enterprise": result["valid_data"]["enterprise"],
+                    "enterprise": result["valid_data"]["enterprise"] or "",
                     "policy_number": result["valid_data"]["policy_number"],
-                    "metadata": result.get("metadata", {})
+                    "company": result["valid_data"]["company"],
+                    "date_of_issuance": result["valid_data"]["date_of_issuance"]
                 },
                 "signatures": {
                     "total_found": sum(sig["metadata"]["signatures_found"] for sig in result["signature_diagnosis"]),
@@ -339,7 +333,8 @@ async def validate_document(
                 "logos": [
                     {
                         "found": logo["logo_status"],
-                        "description": logo["logo"]
+                        "logo": logo["logo"],
+                        "diagnostics": logo["diagnostics"]
                     }
                     for logo in result["logo_diagnosis"]
                 ]

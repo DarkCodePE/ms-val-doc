@@ -27,7 +27,7 @@ class DocumentValidationGraphBuilder(GraphBuilder):
     def add_nodes(self) -> None:
         self.graph.add_node("extract_text", self.document.extract_text_node)
         self.graph.add_node("document_processor", self.document.document_processor)
-        self.graph.add_node("logo_detection", self.logo.verify_signatures)
+        self.graph.add_node("logo_detection", self.logo.verify_logo)
         self.graph.add_node("detect_signatures", self.signature.verify_signatures)
         self.graph.add_node("validate_document", self.judge.validate)
         #self.graph.add_node("save_to_db", self.save_to_database)

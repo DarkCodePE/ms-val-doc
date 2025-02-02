@@ -8,6 +8,7 @@ import operator
 class LogoValidationDetails(TypedDict):
     logo: str
     logo_status: bool
+    diagnostics: str
 
 
 class SignatureMetadata(TypedDict):
@@ -27,7 +28,7 @@ class DocumentValidationDetails(TypedDict):
     enterprise: str
     policy_number: str
     company: str
-    metadata: dict
+    date_of_issuance: str
 
 
 class VerdictDetails(TypedDict):
