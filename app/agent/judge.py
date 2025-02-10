@@ -27,12 +27,20 @@ class JudgeAgent:
         valid_data = state["valid_data"]
         logo_diagnosis = state["logo_diagnosis"]
         page_num = state["page_num"]
+        signature_data = state["signature_data"]
+
+        signature_info = {
+            "has_signature_page": signature_data["signature_status"] if signature_data else False,
+            "total_found_page": signature_data["metadata"]["signatures_found"] if signature_data else 0,
+            "metadata": signature_data["metadata"]["signatures_details"] if signature_data else []
+        }
 
         system_instructions = VERDICT_PAGE_PROMPT.format(
             logo_diagnosis=logo_diagnosis,
             date_of_issuance=valid_data["date_of_issuance"],
             validity=valid_data["validity"],
-            page_num=page_num
+            page_num=page_num,
+            signature_info=signature_info
         )
 
         result = structured_llm.invoke([
@@ -40,11 +48,11 @@ class JudgeAgent:
             HumanMessage(content="Generar un veredicto para la validación de documentos.")
         ])
 
-        #state["pages_verdicts"] = [result]
         page_diagnosis_obj = PageDiagnosis(  # Create the PageDiagnosis object
             logo_diagnosis=logo_diagnosis,
             valid_info=valid_data,
-            page_num=page_num
+            page_num=page_num,
+            signature_info=signature_info
         )
 
         return {
@@ -75,6 +83,7 @@ class JudgeAgent:
         pages_verdicts = state["pages_verdicts"]
         signature_diagnosis = state["signature_diagnosis"]
         total_found_signatures = sum([1 for page in signature_diagnosis if page["signature_status"]])
+
         structured_llm = self.primary_llm.with_structured_output(FinalVerdictResponse)
         system_instructions = VERDICT_PROMPT.format(
             approved_pages=approved_pages,

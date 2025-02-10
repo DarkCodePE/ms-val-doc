@@ -39,9 +39,7 @@ class DiagnosisValidationGraph(GraphBuilder):
                             self.extract_pages_content)  # **Nuevo nodo de extracción por página**
         self.graph.add_node("detect_signatures", self.signature.verify_signatures)
         self.graph.add_node("validate_page", self.document_graph)
-        #self.graph.add_node("validate_page", self.validate_page)
         self.graph.add_node("compile_verdict", self.judge.summarize)
-        #self.graph.add_node("summarize", self.summarize)
 
     def add_edges(self) -> None:
         self.graph.add_edge(START, "detect_signatures")  # **Inicio: Extracción por página**
@@ -94,17 +92,6 @@ class DiagnosisValidationGraph(GraphBuilder):
 
         return {"page_contents": page_content_list}
 
-    # def generate_pages_to_validate(self, state: OverallState):
-    #     """Creates Send objects for each PageContent in OverallState['page_contents'] for parallel validation."""
-    #     send_objects = []
-    #     for page in state["page_contents"]:  # **Iterate over state['page_contents'] list**
-    #         send_objects.append(
-    #             Send("validate_page", {
-    #                 "page_content": page,
-    #             })
-    #         )
-    #     return send_objects
-
     def generate_pages_to_validate(self, state: OverallState) -> list[Send]:
         """Creates Send objects for each PageContent in OverallState['page_contents'] for parallel validation."""
         return [
@@ -113,7 +100,8 @@ class DiagnosisValidationGraph(GraphBuilder):
                   "enterprise": page["enterprise"],
                   "page_base64_image": page["page_base64_image"],
                   "valid_data": page["valid_data"],
-                  "page_num": page["page_num"]}
+                  "page_num": page["page_num"],
+                  "signature_data": page["signature_data"]}
                  )
             for page in state["page_contents"]
             #if page["valid_data"]

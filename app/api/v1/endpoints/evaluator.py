@@ -301,7 +301,8 @@ async def validate_document(
                     "page_number": page_content["page_num"],
                     "diagnostics": {
                         "logo_diagnosis": page_content["logo_diagnosis"],
-                        "valid_info": page_content["valid_info"]
+                        "valid_info": page_content["valid_info"],
+                        "signature_info": page_content["signature_info"]
                     }
                 }
                 for i, page_content in enumerate(result["page_diagnosis"])

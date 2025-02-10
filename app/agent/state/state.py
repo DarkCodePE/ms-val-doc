@@ -33,13 +33,20 @@ class DocumentValidationDetails(TypedDict):
 class VerdictDetails(TypedDict):
     logo_validation_passed: bool
     document_validity_approved: bool
-    #signature_validation_passed: bool
+    signature_validation_passed: bool
+
+
+class SignatureInfo(TypedDict):
+    has_signature_page: bool
+    total_found_page: int
+    metadata: List[Dict[str, int]]
 
 
 class PageDiagnosis(TypedDict):
     page_num: int
     valid_info: DocumentValidationDetails
     logo_diagnosis: LogoValidationDetails
+    signature_info: SignatureInfo
 
 
 class VerdictResponse(TypedDict):

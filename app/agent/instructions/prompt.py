@@ -72,10 +72,12 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
 2. **Evaluar la validez del documento**:
     - Validez del documento: la vigencia es valida si {date_of_issuance} es anterior o igual al inicio del rango {validity} y no puede ser postetior al rango {validity}.
 
+3. **Evaluar la detección de firmas**:
+    - Detección de firmas: Evalúa la presencia y los datos de las firmas basándose en {signature_info}.
+
 3. **Compilar el veredicto final**:
    - Considere los resultados globales de los tres primeros pasos de análisis para formar una conclusión unificada.
-   - El veredicto final debe ser Verdadero si todas las validaciones son satisfactorias, en caso contrario Falso.
-   - El veredicto final debe ser analizado en detalle para determinar si el documento es válido o no, y se de explicar los motivos de su decisión en el campo "reason".
+   - El veredicto final debe ser analizado en detalle para determinar si el documento es válido o no, y se de explicar los motivos y observaciones de su decisión en el campo "reason".
 
 
 # Notas

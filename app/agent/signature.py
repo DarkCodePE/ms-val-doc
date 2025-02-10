@@ -102,6 +102,26 @@ class SignatureAgent:
             logger.error(f"Error en detección de firmas: {str(e)}")
             raise
 
+    # async def page_signature_diagnosis(self, state: OverallState) -> dict:
+    #     """Genera un diagnóstico de firmas por página"""
+    #     try:
+    #
+    #         signature_diagnosis = state["signature_diagnosis"]
+    #         page_num = state["page_num"]
+    #         page_signature_diagnosis = None
+    #         for sig_diag in signature_diagnosis:
+    #             if sig_diag["metadata"]["page_number"] == page_num:
+    #                 page_signature_diagnosis = sig_diag  # Found signature diagnosis for this page
+    #                 break  # Exit loop once found
+    #
+    #         return {
+    #             "signature_diagnosis": [result]
+    #         }
+    #
+    #     except Exception as e:
+    #         logger.error(f"Error en diagnóstico de firmas: {str(e)}")
+    #         raise
+
     def cleanup(self):
         """Limpia recursos si es necesario"""
         pass
