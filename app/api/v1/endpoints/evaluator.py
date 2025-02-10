@@ -10,12 +10,14 @@ import fitz
 import numpy as np
 from app.agent.evaluator import DocumentValidatorAgent
 from app.agent.loader import extract_text_with_pypdfloader
-from app.agent.state.state import DocumentValidationResponse
+from app.agent.state.state import DocumentValidationResponse, OverallState
 from app.agent.tools.tools import find_signature_bounding_boxes
 from app.config.database import get_db
 import os
 import logging
 from langchain_community.document_loaders import PyPDFLoader
+
+from app.workflow.diagnosis_graph import diagnosis_graph
 from app.workflow.document_graph import document_graph
 
 logger = logging.getLogger(__name__)
@@ -274,74 +276,46 @@ async def validate_document(
                 detail="Only PDF files are accepted"
             )
 
-        # Extract text content from PDF
-        document_text = await extract_pdf_text(file)
-        logger.info(f"Extracted text: {document_text}")
         # Initial state
-        initial_state: DocumentValidationResponse = {
-            "file": file,
-            "extracted_text": None,  # Add extracted text to state
-            "document_path": file.filename,
-            "document_data": document_text,
-            "valid_data": {
-                "validity": "",
-                "enterprise": "",
-                "policy_number": "",
-                "company": "",
-                "date_of_issuance": ""
-            },
-            "logo_diagnosis": [],
-            "signature_diagnosis": [],
-            "final_verdict": {
-                "verdict": False,
-                "reason": "Pending validation",
-                "details": {
-                    "logo_validation_passed": False,
-                    "document_validity_approved": False,
-                    "signature_validation_passed": False
-                }
-            }
-        }
-
+        # initial_state: OverallState = {
+        #     "file": file,
+        #     "page_contents": [],
+        #     "signature_diagnosis": [],
+        #     "final_verdict": None
+        # }
         # Execute workflow
         logger.info(f"Starting document validation: {file.filename}")
-        component = document_graph.compile()
-        result = await component.ainvoke(initial_state)
-        logger.info(f"Document validation completed: {file.filename}")
+        #component = document_graph.compile()
+        state = OverallState(file=file)
+        component = diagnosis_graph.compile()
+        result = await component.ainvoke(state)
+        print(f"result: {result}")
 
         # Format response
+        #itera el resultado page_contents y muestra el contenido de cada página
         response = {
-            "validation_results": {
-                "valid_data": {
-                    "validity": result["valid_data"]["validity"],
-                    "enterprise": result["valid_data"]["enterprise"] or "",
-                    "policy_number": result["valid_data"]["policy_number"],
-                    "company": result["valid_data"]["company"],
-                    "date_of_issuance": result["valid_data"]["date_of_issuance"]
-                },
-                "signatures": {
-                    "total_found": sum(sig["metadata"]["signatures_found"] for sig in result["signature_diagnosis"]),
-                    "details": [
-                        {
-                            "page": sig["metadata"]["page_number"],
-                            "signatures_found": sig["metadata"]["signatures_found"],
-                            "locations": sig["metadata"]["signatures_details"]
-                        }
-                        for sig in result["signature_diagnosis"]
-                    ]
-                },
-                "logos": [
-                    {
-                        "found": logo["logo_status"],
-                        "logo": logo["logo"],
-                        "diagnostics": logo["diagnostics"]
+            #"document_name": file.filename,
+            "total_pages": len(result["page_diagnosis"]),
+            "pages": [
+                {
+                    "page_number": page_content["page_num"],
+                    "diagnostics": {
+                        "logo_diagnosis": page_content["logo_diagnosis"],
+                        "valid_info": page_content["valid_info"]
                     }
-                    for logo in result["logo_diagnosis"]
-                ]
-            },
-            "final_verdict": result["final_verdict"],
-            "status": "success",
-            "message": "Document processed successfully"
+                }
+                for i, page_content in enumerate(result["page_diagnosis"])
+            ],
+            "verdicts": [
+                {
+                    "page_number": page_verdict["page_num"],
+                    "verdict": page_verdict["verdict"],
+                    "reason": page_verdict["reason"]
+                }
+                for page_verdict in result["pages_verdicts"]
+            ],
+            "signatures": result["signature_diagnosis"],
+            "final_verdict": result["final_verdict"]
         }
 
         return response

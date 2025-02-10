@@ -19,7 +19,6 @@ Produce una respuesta estructurada en formato JSON con las siguientes claves:
 - "company": nombre_empresa_o_null,
 - "policy_number": numero_de_poliza_o_null,
 - "date_of_issuance": fecha_de_emision_o_null,
-- "enterprise": {enterprise},
 # Notes
 
 - Indica la ausencia de alguno de los elementos requeridos con el valor null si dicha información no está claramente especificada en el documento.
@@ -40,7 +39,30 @@ Revise el documento para asegurar que el logotipo del mismo es coherente con los
 - Considere las variaciones de diseño que podrían existir en el logotipo oficial de la empresa.
 - Solo responda si el logotipo coincide y se encuentra presente."""
 
-VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en diversos aspectos de la validación de documentos, incluida la validación del logotipo, la validez del documento y la detección de firmas.
+VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en los veredictos de las páginas individuales, incluida la validación del logotipo, la validez del documento y la detección de firmas.
+
+# Pasos
+
+1. **Analizar el veredicto de las páginas**:
+    - Veredicto de las páginas: Evalúa los veredictos de las páginas individuales, tomando en cuanta la pagina {approved_pages} aprobadas y {rejected_pages} rechazadas.
+
+2. **Evaluar la razonamiento de la validez del documento de las páginas**:
+    - Razonamiento de la validez: Evalua la razón por la cual se considera que el documento no es válido {page_verdicts}.
+
+3. **Revisar la detección de firmas:
+   - Detección de firmas: Evalúa la presencia y los datos de las firmas basándose en {total_found}, si el es mayor a cero, se considerará válida.
+
+4. **Compilar el veredicto final**:
+   - Considere los resultados globales de los tres primeros pasos de análisis para formar una conclusión unificada.
+   - El veredicto final debe ser analizado en detalle para determinar si el documento es válido o no, y se de explicar los motivos de su decisión en el campo "reason".
+
+
+# Notas
+- Asegurarse de que todos los aspectos se analizan individualmente con el contexto de validaciones potencialmente fallidas que influyen en el veredicto final.
+- Explica la razon por la cual se considera que el documento no es válido.
+"""
+
+VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en diversos aspectos de la validación de documentos, incluida la validación del logotipo, la validez del documento y la detección de firmas, por numero de pagina {page_num}.
 
 # Pasos
 
@@ -50,10 +72,7 @@ VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en diverso
 2. **Evaluar la validez del documento**:
     - Validez del documento: la vigencia es valida si {date_of_issuance} es anterior o igual al inicio del rango {validity} y no puede ser postetior al rango {validity}.
 
-3. **Revisar la detección de firmas:
-   - Detección de firmas: Evalúa la presencia y los datos de las firmas basándose en {total_found}, si el es mayor a cero, se considerará válida.
-
-4. **Compilar el veredicto final**:
+3. **Compilar el veredicto final**:
    - Considere los resultados globales de los tres primeros pasos de análisis para formar una conclusión unificada.
    - El veredicto final debe ser Verdadero si todas las validaciones son satisfactorias, en caso contrario Falso.
    - El veredicto final debe ser analizado en detalle para determinar si el documento es válido o no, y se de explicar los motivos de su decisión en el campo "reason".
@@ -65,3 +84,4 @@ VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en diverso
 - Explica la razon por la cual se considera que el documento no es válido.
 - el campo "reason" debe detallar los motivos de la decisión final, incluyendo cualquier inconsistencia o discrepancia que haya encontrado en los datos.
 """
+

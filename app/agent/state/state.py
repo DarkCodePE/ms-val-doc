@@ -25,7 +25,6 @@ class SignatureValidationDetails(TypedDict):
 
 class DocumentValidationDetails(TypedDict):
     validity: str
-    enterprise: str
     policy_number: str
     company: str
     date_of_issuance: str
@@ -34,21 +33,55 @@ class DocumentValidationDetails(TypedDict):
 class VerdictDetails(TypedDict):
     logo_validation_passed: bool
     document_validity_approved: bool
-    signature_validation_passed: bool
+    #signature_validation_passed: bool
+
+
+class PageDiagnosis(TypedDict):
+    page_num: int
+    valid_info: DocumentValidationDetails
+    logo_diagnosis: LogoValidationDetails
 
 
 class VerdictResponse(TypedDict):
     verdict: bool
     reason: str
     details: VerdictDetails
+    page_num: int
+
+
+class FinalVerdictResponse(TypedDict):
+    verdict: bool
+    reason: str
 
 
 class DocumentValidationResponse(TypedDict):
-    file: UploadFile
     extracted_text: Optional[str]
-    document_path: str
-    document_data: str
     valid_data: DocumentValidationDetails
     logo_diagnosis: List[LogoValidationDetails]
-    signature_diagnosis: List[SignatureValidationDetails]
-    final_verdict: VerdictResponse
+
+
+class PageVerdict(TypedDict):
+    page_num: int
+    verdict: str
+    reason: str
+
+
+class PageContent(TypedDict):
+    page_num: int
+    page_content: str
+    signature_data: Optional[SignatureValidationDetails]
+    page_base64_image: str
+    valid_data: Optional[DocumentValidationDetails]
+    logo_diagnosis: Optional[LogoValidationDetails]
+    page_diagnosis: Optional[PageDiagnosis]
+    enterprise: str
+    pages_verdicts: List[VerdictResponse]
+
+
+class OverallState(TypedDict):
+    file: UploadFile
+    page_contents: list[PageContent]
+    page_diagnosis: Annotated[List[PageDiagnosis], operator.add]
+    signature_diagnosis: list[SignatureValidationDetails]
+    pages_verdicts: Annotated[List[VerdictResponse], operator.add]
+    final_verdict: Optional[FinalVerdictResponse]

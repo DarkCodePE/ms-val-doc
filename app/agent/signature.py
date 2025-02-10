@@ -11,7 +11,7 @@ from PIL import Image
 import logging
 import cv2
 
-from app.agent.state.state import SignatureValidationDetails, DocumentValidationResponse
+from app.agent.state.state import SignatureValidationDetails, DocumentValidationResponse, OverallState
 from app.agent.tools.signature_detect import find_signature_bounding_boxes
 from app.config.config import get_settings
 from app.providers.llm_manager import LLMConfig, LLMManager, LLMType
@@ -68,7 +68,7 @@ class SignatureAgent:
             "height": int(height)
         }
 
-    async def verify_signatures(self, state: DocumentValidationResponse) -> dict:
+    async def verify_signatures(self, state: OverallState) -> dict:
         """Detecta firmas usando OpenCV"""
         try:
             # Convertir PDF a imágenes

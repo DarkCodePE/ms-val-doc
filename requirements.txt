@@ -33,10 +33,10 @@ passlib[bcrypt]
 langgraph~=0.2.62
 pypdf
 langchain_anthropic
-opencv-python~=4.11.0.86
 PyMuPDF
 pillow~=11.1.0
 numpy~=1.26.3
 typing_extensions~=4.12.2
 langchain_google_vertexai
 langgraph-cli[inmem]
+opencv-python
