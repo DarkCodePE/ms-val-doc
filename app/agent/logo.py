@@ -37,7 +37,7 @@ class LogoAgent:
 
     async def verify_logo(self, state: PageContent) -> dict:
         """Verify signatures using multimodal LLM and OpenCV"""
-        print(f"state: {state}")
+        #print(f"state: {state}")
         try:
 
             # Convert base64 image to PIL Image

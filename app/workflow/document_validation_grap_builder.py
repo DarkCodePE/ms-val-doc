@@ -25,12 +25,9 @@ class DocumentValidationGraphBuilder(GraphBuilder):
 
     def add_nodes(self) -> None:
         self.graph.add_node("document_processor", self.document.document_processor)
-        self.graph.add_node("logo_detection", self.logo.verify_logo)
         self.graph.add_node("page_validation", self.judge.validate)
 
     def add_edges(self) -> None:
         self.graph.add_edge(START, "document_processor")
-        self.graph.add_edge("document_processor", "logo_detection")
-        self.graph.add_edge("logo_detection", "page_validation")
+        self.graph.add_edge("document_processor", "page_validation")
         self.graph.add_edge("page_validation", END)
-

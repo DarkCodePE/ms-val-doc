@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 import cv2
-from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter, Depends, Form
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 import fitz
@@ -256,6 +256,7 @@ async def extract_pdf_text(file: UploadFile) -> str:
 @router.post("/v2/validate", response_model=dict)
 async def validate_document(
         file: UploadFile = File(...),
+        person_name: str = Form(...),
         db: Session = Depends(get_db),
 ):
     """
@@ -267,6 +268,8 @@ async def validate_document(
 
     Returns:
         Dict containing complete validation results
+        :param file:
+        :param person_name:
     """
     try:
         # Verify file type
@@ -275,47 +278,46 @@ async def validate_document(
                 status_code=400,
                 detail="Only PDF files are accepted"
             )
+        if not person_name or not person_name.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Person name is required"
+            )
 
-        # Initial state
-        # initial_state: OverallState = {
-        #     "file": file,
-        #     "page_contents": [],
-        #     "signature_diagnosis": [],
-        #     "final_verdict": None
-        # }
         # Execute workflow
         logger.info(f"Starting document validation: {file.filename}")
-        #component = document_graph.compile()
-        state = OverallState(file=file)
+
+        state = OverallState(file_signature=file,
+                             file_logo=file,
+                             file=file,
+                             worker=person_name.strip())
         component = diagnosis_graph.compile()
         result = await component.ainvoke(state)
         print(f"result: {result}")
 
         # Format response
-        #itera el resultado page_contents y muestra el contenido de cada página
         response = {
-            #"document_name": file.filename,
             "total_pages": len(result["page_diagnosis"]),
             "pages": [
                 {
                     "page_number": page_content["page_num"],
                     "diagnostics": {
-                        "logo_diagnosis": page_content["logo_diagnosis"],
                         "valid_info": page_content["valid_info"],
-                        "signature_info": page_content["signature_info"]
                     }
                 }
                 for i, page_content in enumerate(result["page_diagnosis"])
             ],
-            "verdicts": [
+            "observations": [
                 {
                     "page_number": page_verdict["page_num"],
                     "verdict": page_verdict["verdict"],
-                    "reason": page_verdict["reason"]
+                    "reason": page_verdict["reason"],
+                    "details": page_verdict["details"]
                 }
                 for page_verdict in result["pages_verdicts"]
             ],
             "signatures": result["signature_diagnosis"],
+            "logo": result["logo_diagnosis"],
             "final_verdict": result["final_verdict"]
         }
 

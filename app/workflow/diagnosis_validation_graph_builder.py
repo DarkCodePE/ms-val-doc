@@ -6,11 +6,12 @@ from langgraph.types import Send
 
 from app.agent.document import DocumentAgent
 from app.agent.judge import JudgeAgent
-from app.agent.logo import LogoAgent
+
 from app.agent.signature import SignatureAgent
-from app.agent.state.state import OverallState, DocumentValidationResponse, PageVerdict, VerdictResponse, \
-    VerdictDetails, PageContent, DocumentValidationDetails
-from app.agent.utils.util import extract_pdf_text_per_page, pdf_page_to_base64_image, extract_name_enterprise
+from app.agent.single_logo import SingleLogoAgent
+from app.agent.state.state import OverallState, PageContent
+from app.agent.utils.util import semantic_segment_pdf_with_llm, extract_name_enterprise
+
 from app.workflow.builder.base import GraphBuilder
 import logging
 
@@ -22,7 +23,7 @@ class DiagnosisValidationGraph(GraphBuilder):
     def __init__(self):
         super().__init__()
         self.document = DocumentAgent()
-        self.logo = LogoAgent()
+        self.logo = SingleLogoAgent()
         self.signature = SignatureAgent()
         self.judge = JudgeAgent()
         self.document_graph = None
@@ -40,11 +41,17 @@ class DiagnosisValidationGraph(GraphBuilder):
         self.graph.add_node("detect_signatures", self.signature.verify_signatures)
         self.graph.add_node("validate_page", self.document_graph)
         self.graph.add_node("compile_verdict", self.judge.summarize)
+        self.graph.add_node("logo_detection", self.logo.verify_logo)
 
     def add_edges(self) -> None:
-        self.graph.add_edge(START, "detect_signatures")  # **Inicio: Extracción por página**
-        self.graph.add_edge("detect_signatures",
-                            "extract_pages_content")  # Extracción -> Detección de firmas (por página)
+        # Parallel branches for signature and logo detection
+        #self.graph.add_edge(START, "detect_signatures")
+        #self.graph.add_edge(START, "logo_detection")
+        self.graph.add_edge(START, "detect_signatures")
+        self.graph.add_edge("detect_signatures", "logo_detection")
+        # After both signature and logo detection are done, proceed to extract_pages_content
+        #self.graph.add_edge(["detect_signatures", "logo_detection"], "extract_pages_content")
+        self.graph.add_edge("logo_detection", "extract_pages_content")
         self.graph.add_conditional_edges("extract_pages_content",
                                          self.generate_pages_to_validate,
                                          ["validate_page"]
@@ -52,41 +59,28 @@ class DiagnosisValidationGraph(GraphBuilder):
         self.graph.add_edge("validate_page", "compile_verdict")
         self.graph.add_edge("compile_verdict", END)
 
-        #self.graph.add_edge("judge_page", "summarize")
-
-        #self.graph.add_edge("summarize", END)
-
     async def extract_pages_content(self, state: OverallState) -> dict:
-        """Extracts page content, base64 images, and performs initial signature detection.
-
-        Populates OverallState['page_contents'] with a list of PageContent objects.
-        """
+        """Extracts page content using semantic segmentation with LLM."""
         pdf_file = state["file"]
-        text_per_page = await extract_pdf_text_per_page(pdf_file)
-        pages_signatures = state["signature_diagnosis"]
-        print(f"text_per_page: {text_per_page}")
-        print(f"pages_signatures: {pages_signatures}")
-        # Extraer el nombre de la empresa una única vez, ya que se asume que es el mismo para todas las páginas.
+        # Use semantic segmentation instead of page-based extraction
+        segmented_sections = await semantic_segment_pdf_with_llm(pdf_file,
+                                                                 self.document.llm_manager)  # Use LLM for segmentation
         try:
             enterprise = await extract_name_enterprise(state["file"])
         except Exception as e:
             enterprise = ""
 
+        person = state["worker"]
         page_content_list: List[PageContent] = []
-        for i, content in enumerate(text_per_page):
+        for i, content in enumerate(segmented_sections):  # Iterate over segmented sections now
             page_num = i + 1
-            base64_image = await pdf_page_to_base64_image(pdf_file, page_num)
-            signature_data = pages_signatures[i] if i < len(pages_signatures) else None
-
             page_content = PageContent(
-                page_num=page_num,
+                page_num=page_num,  # Rethink page_num - maybe section_num?
                 page_content=content,
-                page_base64_image=base64_image,
-                signature_data=signature_data,
-                valid_data=None,  # Dummy valid_data - you'll populate this in the subgraph
-                pages_verdicts=None,  # Dummy pages_verdicts - you'll populate this in the subgraph
-                enterprise=enterprise,  # Dummy enterprise - you'll populate this in the subgraph
-                logo_diagnosis=None  # Dummy logo_diagnosis - you'll populate this in the subgraph
+                valid_data=None,
+                pages_verdicts=None,
+                enterprise=enterprise,
+                person=person
             )
             page_content_list.append(page_content)
 
@@ -98,11 +92,9 @@ class DiagnosisValidationGraph(GraphBuilder):
             Send("validate_page",
                  {"page_content": page["page_content"],
                   "enterprise": page["enterprise"],
-                  "page_base64_image": page["page_base64_image"],
                   "valid_data": page["valid_data"],
                   "page_num": page["page_num"],
-                  "signature_data": page["signature_data"]}
+                  "person": page["person"]}
                  )
             for page in state["page_contents"]
-            #if page["valid_data"]
         ]

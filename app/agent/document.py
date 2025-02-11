@@ -21,6 +21,7 @@ class DocumentAgent:
    Agente para la extracción y procesamiento de documentos PDF.
    Se encarga de identificar la empresa aseguradora, extraer el contenido del documento y procesar los datos clave.
    """
+
     def __init__(self, settings=None):
         """Initialize ReportCompiler with configuration settings.
 
@@ -38,22 +39,21 @@ class DocumentAgent:
         # Get the primary LLM for report generation
         self.primary_llm = self.llm_manager.get_llm(LLMType.GPT_4O_MINI)
 
-    async def document_processor(self, state:
-    PageContent) -> dict:
-        print(f"state: {state}")
+    async def document_processor(self, state: PageContent) -> dict:
+
         structured_llm = self.primary_llm.with_structured_output(DocumentValidationDetails)
-        print(f"structured_llm: {structured_llm}")
+
         system_instructions = DOCUMENT_PROCESSOR.format(
             enterprise=state["enterprise"],
-            document_data=state["page_content"]
+            document_data=state["page_content"],
+            person=state["person"]
         )
-        print(f"system_instructions: {system_instructions}")
+
         result = structured_llm.invoke([
             SystemMessage(content=system_instructions),
             HumanMessage(
                 content="Extrae los datos clave de un documento, particularmente la vigencia (fechas o periodos), empresa, póliza")
         ])
-        print(f"Document Processor Response: {result}")
+
         state["valid_data"] = result
         return state
-        #return {"valid_data": result}

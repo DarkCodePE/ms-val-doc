@@ -72,7 +72,7 @@ class SignatureAgent:
         """Detecta firmas usando OpenCV"""
         try:
             # Convertir PDF a imágenes
-            cv_images = await self.pdf_to_images(state["file"])
+            cv_images = await self.pdf_to_images(state["file_signature"])
             signature_diagnosis = []
 
             # Procesar cada página

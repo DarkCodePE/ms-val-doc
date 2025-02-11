@@ -9,6 +9,7 @@ class LogoValidationDetails(TypedDict):
     logo: str
     logo_status: bool
     diagnostics: str
+    page_num: int
 
 
 class SignatureMetadata(TypedDict):
@@ -23,17 +24,25 @@ class SignatureValidationDetails(TypedDict):
     metadata: SignatureMetadata
 
 
+class PersonValidationDetails(TypedDict):
+    name: str
+    policy_number: str
+    company: str
+
+
 class DocumentValidationDetails(TypedDict):
     validity: str
     policy_number: str
     company: str
     date_of_issuance: str
+    person_by_policy: PersonValidationDetails
 
 
 class VerdictDetails(TypedDict):
     logo_validation_passed: bool
     document_validity_approved: bool
     signature_validation_passed: bool
+    person_validation_passed: bool
 
 
 class SignatureInfo(TypedDict):
@@ -45,8 +54,6 @@ class SignatureInfo(TypedDict):
 class PageDiagnosis(TypedDict):
     page_num: int
     valid_info: DocumentValidationDetails
-    logo_diagnosis: LogoValidationDetails
-    signature_info: SignatureInfo
 
 
 class VerdictResponse(TypedDict):
@@ -56,9 +63,15 @@ class VerdictResponse(TypedDict):
     page_num: int
 
 
+class ObservationResponse(TypedDict):
+    observations: str
+    page_num: int
+
+
 class FinalVerdictResponse(TypedDict):
     verdict: bool
     reason: str
+    details: VerdictDetails
 
 
 class DocumentValidationResponse(TypedDict):
@@ -76,19 +89,21 @@ class PageVerdict(TypedDict):
 class PageContent(TypedDict):
     page_num: int
     page_content: str
-    signature_data: Optional[SignatureValidationDetails]
-    page_base64_image: str
     valid_data: Optional[DocumentValidationDetails]
-    logo_diagnosis: Optional[LogoValidationDetails]
     page_diagnosis: Optional[PageDiagnosis]
     enterprise: str
-    pages_verdicts: List[VerdictResponse]
+    pages_verdicts: Optional[ObservationResponse]
+    person: str
 
 
 class OverallState(TypedDict):
+    file_signature: UploadFile
+    file_logo: UploadFile
     file: UploadFile
     page_contents: list[PageContent]
     page_diagnosis: Annotated[List[PageDiagnosis], operator.add]
     signature_diagnosis: list[SignatureValidationDetails]
-    pages_verdicts: Annotated[List[VerdictResponse], operator.add]
+    pages_verdicts: Annotated[List[ObservationResponse], operator.add]
     final_verdict: Optional[FinalVerdictResponse]
+    logo_diagnosis: list[LogoValidationDetails]
+    worker: str

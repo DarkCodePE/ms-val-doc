@@ -1,8 +1,9 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.agent.instructions.prompt import VERDICT_PROMPT, VERDICT_PAGE_PROMPT
+from app.agent.instructions.prompt import VERDICT_PROMPT, VERDICT_PAGE_PROMPT, FINAL_VERDICT_PROMPT, \
+    FINAL_VERDICTO_PROMPT
 from app.agent.state.state import DocumentValidationResponse, VerdictResponse, PageVerdict, OverallState, \
-    VerdictDetails, PageContent, PageDiagnosis, FinalVerdictResponse
+    VerdictDetails, PageContent, PageDiagnosis, FinalVerdictResponse, ObservationResponse
 from app.config.config import get_settings
 from app.providers.llm_manager import LLMConfig, LLMType, LLMManager
 import logging
@@ -25,22 +26,17 @@ class JudgeAgent:
     async def validate(self, state: PageContent) -> dict:
         structured_llm = self.primary_llm.with_structured_output(VerdictResponse)
         valid_data = state["valid_data"]
-        logo_diagnosis = state["logo_diagnosis"]
         page_num = state["page_num"]
-        signature_data = state["signature_data"]
-
-        signature_info = {
-            "has_signature_page": signature_data["signature_status"] if signature_data else False,
-            "total_found_page": signature_data["metadata"]["signatures_found"] if signature_data else 0,
-            "metadata": signature_data["metadata"]["signatures_details"] if signature_data else []
-        }
-
+        enterprise = state["enterprise"]
+        person = state["person"]
         system_instructions = VERDICT_PAGE_PROMPT.format(
-            logo_diagnosis=logo_diagnosis,
+            enterprise=enterprise,
             date_of_issuance=valid_data["date_of_issuance"],
             validity=valid_data["validity"],
+            policy_number=valid_data["policy_number"],
             page_num=page_num,
-            signature_info=signature_info
+            person_by_policy=valid_data["person_by_policy"],
+            person=person
         )
 
         result = structured_llm.invoke([
@@ -49,10 +45,8 @@ class JudgeAgent:
         ])
 
         page_diagnosis_obj = PageDiagnosis(  # Create the PageDiagnosis object
-            logo_diagnosis=logo_diagnosis,
             valid_info=valid_data,
-            page_num=page_num,
-            signature_info=signature_info
+            page_num=page_num
         )
 
         return {
@@ -62,34 +56,23 @@ class JudgeAgent:
 
     def summarize(self, state: OverallState) -> dict:
         """Summarizes pages_verdicts para un veredicto final."""
-        approved_pages = 0
-        rejected_pages = 0
-        page_verdicts_details = []
 
-        # Acceder correctamente a la lista de page_contents
-        for page_content in state["pages_verdicts"]:
-            # Verificar si existe pages_verdicts para esta página
-            verdict = page_content["verdict"]
-            page_num = page_content["page_num"]
-
-            if verdict:
-                approved_pages += 1
-            else:
-                rejected_pages += 1
-
-            page_verdicts_details.append(
-                f"Page {page_num}: {verdict}"
-            )
         pages_verdicts = state["pages_verdicts"]
+        pages_diagnosis = state["page_diagnosis"]
         signature_diagnosis = state["signature_diagnosis"]
+        logo_diagnosis = state["logo_diagnosis"]
         total_found_signatures = sum([1 for page in signature_diagnosis if page["signature_status"]])
-
+        enterprise = state["page_contents"][0]["enterprise"]
+        person = state["page_contents"][0]["person"]
         structured_llm = self.primary_llm.with_structured_output(FinalVerdictResponse)
-        system_instructions = VERDICT_PROMPT.format(
-            approved_pages=approved_pages,
-            rejected_pages=rejected_pages,
-            page_verdicts=pages_verdicts,
-            total_found=total_found_signatures
+        system_instructions = FINAL_VERDICTO_PROMPT.format(
+            pages_verdicts=pages_verdicts,
+            total_found_signatures=total_found_signatures,
+            page_diagnosis=pages_diagnosis,
+            logo_diagnosis=logo_diagnosis,
+            signature_diagnosis=signature_diagnosis,
+            enterprise=enterprise,
+            person=person
         )
         final_verdict_response = structured_llm.invoke([
             SystemMessage(content=system_instructions),

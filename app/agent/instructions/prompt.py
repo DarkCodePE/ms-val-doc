@@ -11,18 +11,22 @@ DOCUMENT_PROCESSOR = """Valida la informacion del documento para la razon social
 3. **Empresa**: Busca el nombre de la empresa que emite el documento, tienes que guardar el nombre de la empresa en el campo "company", difiere del nombre de la razón social {enterprise}, y el igual a logotipo.
 4. **Identificar la Empresa**: Localiza cualquier mención del nombre de una empresa que pudiera ser responsable del documento.
 5. **Encontrar Información de la Póliza**: Busca números o identificadores que se mencionen junto a las palabras 'póliza' o 'Póliza de Pensiones'.
+6. **Buscar Personas**: con el numero de poliza, busca el nombre de la persona asegurada {person} en la lista de asegurados, una ves encontrada, debes guardar el nombre de la persona asegurada en el campo "person_by_policy", su poliza en "policy_number" y la empresa en "company".
 
 # Output Format
 
 Produce una respuesta estructurada en formato JSON con las siguientes claves:
 - "validity": [rango_fechas_o_null],
-- "company": nombre_empresa_o_null,
-- "policy_number": numero_de_poliza_o_null,
+- "company": [nombre_empresa_o_rason_social_o_null],
+- "policy_number": [numeros_de_poliza_o_null],
 - "date_of_issuance": fecha_de_emision_o_null,
+- "person_by_policy": [person_by_policy_o_null],
 # Notes
 
 - Indica la ausencia de alguno de los elementos requeridos con el valor null si dicha información no está claramente especificada en el documento.
-- La exactitud en la extracción de información y la claridad de los términos es prioritaria para asegurar la utilidad del resultado."""
+- La exactitud en la extracción de información y la claridad de los términos es prioritaria para asegurar la utilidad del resultado.
+- Para la busqueda de personas aseguradas, se debe buscar el nombre de la persona asegurada con el numero de poliza en la lista de asegurados, si no se encuentra, se debe indicar null.
+"""
 
 LOGO_DETECTION_PROMPT = """Validar si el logotipo de la empresa dentro de un documento y corresponde a la razón social {enterprise} o la empresa {company}.
 
@@ -39,51 +43,113 @@ Revise el documento para asegurar que el logotipo del mismo es coherente con los
 - Considere las variaciones de diseño que podrían existir en el logotipo oficial de la empresa.
 - Solo responda si el logotipo coincide y se encuentra presente."""
 
-VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en los veredictos de las páginas individuales, incluida la validación del logotipo, la validez del documento y la detección de firmas.
+VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en las observaciones de las páginas individuales, incluida la validación del logotipo, la validez del documento y la detección de firmas.
 
-# Pasos
+# Steps
 
-1. **Analizar el veredicto de las páginas**:
-    - Veredicto de las páginas: Evalúa los veredictos de las páginas individuales, tomando en cuanta la pagina {approved_pages} aprobadas y {rejected_pages} rechazadas.
+1. **Analizar las observaciones de las páginas**:
+    - Observaciones de las páginas: Evalúa las observaciones de las páginas individuales {pages_observations} para determinar si el documento es válido o no.
 
-2. **Evaluar la razonamiento de la validez del documento de las páginas**:
-    - Razonamiento de la validez: Evalua la razón por la cual se considera que el documento no es válido {page_verdicts}.
-
-3. **Revisar la detección de firmas:
-   - Detección de firmas: Evalúa la presencia y los datos de las firmas basándose en {total_found}, si el es mayor a cero, se considerará válida.
-
-4. **Compilar el veredicto final**:
-   - Considere los resultados globales de los tres primeros pasos de análisis para formar una conclusión unificada.
-   - El veredicto final debe ser analizado en detalle para determinar si el documento es válido o no, y se de explicar los motivos de su decisión en el campo "reason".
-
-
-# Notas
-- Asegurarse de que todos los aspectos se analizan individualmente con el contexto de validaciones potencialmente fallidas que influyen en el veredicto final.
-- Explica la razon por la cual se considera que el documento no es válido.
-"""
-
-VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en diversos aspectos de la validación de documentos, incluida la validación del logotipo, la validez del documento y la detección de firmas, por numero de pagina {page_num}.
-
-# Pasos
-
-1. **Analizar la validación del logotipo**:
-   - Validación del logotipo: Evalúa si el logotipo es válido basándose en {logo_diagnosis}.
-
-2. **Evaluar la validez del documento**:
-    - Validez del documento: la vigencia es valida si {date_of_issuance} es anterior o igual al inicio del rango {validity} y no puede ser postetior al rango {validity}.
-
-3. **Evaluar la detección de firmas**:
-    - Detección de firmas: Evalúa la presencia y los datos de las firmas basándose en {signature_info}.
+2. **Evaluar el razonamiento de la validez del documento de las páginas**:
+    - Analiza y formula hipótesis sobre la validez del documento basándote en las observaciones de las páginas.
 
 3. **Compilar el veredicto final**:
-   - Considere los resultados globales de los tres primeros pasos de análisis para formar una conclusión unificada.
-   - El veredicto final debe ser analizado en detalle para determinar si el documento es válido o no, y se de explicar los motivos y observaciones de su decisión en el campo "reason".
+   - Integra los resultados de los dos pasos anteriores para formar una conclusión unificada.
+   - Determina si el documento es válido o no, explicando los motivos en el campo "reason".
 
+# Output Format
+
+El veredicto final debe estructurarse en un formato que incluya la decisión de validez y las razones que respaldan esta decisión.
 
 # Notas
--  SI {logo_diagnosis} tiene un valor null, entonces el logotipo no se encontró en el documento. Importante: si logo_status es true, significa que el logotipo existe en el documento !!!.
-- Asegurarse de que todos los aspectos se analizan individualmente con el contexto de validaciones potencialmente fallidas que influyen en el veredicto final.
-- Explica la razon por la cual se considera que el documento no es válido.
-- el campo "reason" debe detallar los motivos de la decisión final, incluyendo cualquier inconsistencia o discrepancia que haya encontrado en los datos.
+
+- Asegúrate de que todos los aspectos se analizan individualmente en el contexto de posibles fallas y lista estos hallazgos en el veredicto final.
+- Explica la razón por la cual se considera que el documento no es válido.
+
 """
 
+VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en diversos aspectos de la validación del documento, incluida la vigencia ,el número de póliza y la persona asegurada, por numero de pagina {page_num}.
+
+# Pasos
+
+1. **Validación de persona:**
+   - Analiza la información de la persona asegurada {person} y verifica si coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number}, debe coincidir con el numero de poliza de la persona asegurada.
+   
+2. **Validación de vigencia:**
+   - Asegúrate de que la fecha de emisión {date_of_issuance} sea anterior o igual al inicio del rango de {validity} y no posterior al rango de {validity}.
+   - Verifica la existencia de al menos un número de póliza {policy_number}.
+
+2 **Compilar veredicto final:**
+   - Integra los resultados de las validaciones vigencia, número de póliza y persona asegurada.
+   - Genera un estatus para cada categoría de la revisión: `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
+
+# Notas
+- Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto
+"""
+
+FINAL_VERDICT_PROMPT = """ Analisa los veredictos de las páginas {pages_verdicts} y tambien la informacion del diagnostico {page_diagnosis}, luego genera un veredicto final. Los veredictos individuales debe seguir los siguientes pasos.
+
+# Pasos
+
+1. **Validación de firma:**
+   - Verifica si existe al menos una firma en el documento {total_found_signatures}. Si es así, la firma es válida.
+
+2. **Validación del logotipo:**
+   - revisa toda la información relacionada con el logotipo y la empresa para confirmar la validez del logotipo.
+
+3. **Validación de vigencia:**
+   - revisa los veredictos de las páginas individuales y también la información para confirmar la validez de la vigencia.
+   - revisa los veredictos de las páginas individuales y también la información para confirmar si existe al menos un número de póliza.
+
+4. **Compilar veredicto final:**
+   - Integra los resultados de las validaciones de firma, logotipo, vigencia y número de póliza.
+   - Genera un estatus para cada categoría de la revisión: `logo_validation_passed`, `signature_validation_passed`, `validity_validation_passed`, `policy_validation_passed`.
+
+# Formato de Salida
+
+Estructura el veredicto final como un párrafo que incluya la decisión de validez y las razones que apoyan cada criterio. Puede ser en un formato narrativo, proporcionando claridad y justificación de cada área evaluada.
+
+**Salida:**
+
+"La validación del documento indica que: la firma es válida ya que se detectó al menos una firma. La validación del logotipo es positiva contando con una correspondencia adecuada con la empresa especificada. La vigencia se confirma como válida dado que la fecha de emisión está dentro del rango especificado, además existe un número de póliza. En conclusión, todos los criterios validados han sido superados exitosamente."
+
+# Notas
+
+- Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto final, basandote en el veredicto de las páginas individuales {pages_verdicts}. 
+- Este proceso ayuda a construir una validación robusta y comprensible del documento evaluado."""
+
+FINAL_VERDICTO_PROMPT = """ Analisa los veredictos de las páginas {pages_verdicts} y tambien la informacion del diagnostico {page_diagnosis}, luego genera un veredicto final. Los veredictos individuales debe seguir los siguientes pasos.
+
+# Pasos
+
+1. **Validación de firma:**
+   - Verifica si existe al menos una firma en el documento {total_found_signatures}. Si es así, la firma es válida{signature_diagnosis}.
+    - Si la firma ya existe en una pagina, entonces se considera valida.
+2. **Validación del logotipo:**
+   - revisa toda la información relacionada con el logotipo y la empresa para confirmar la validez del logotipo {logo_diagnosis}.
+
+3. **Validación de vigencia:**
+   - revisa los veredictos de las páginas individuales y también la información para confirmar la validez de la vigencia {page_diagnosis}.
+   - revisa los veredictos de las páginas individuales y también la información para confirmar si existe al menos un número de póliza{page_diagnosis}.
+4. **Validación de persona:**
+   - revisa los veredictos de las páginas individuales {pages_verdicts} y también la información para confirmar si la persona asegurada coincide con el nombre de la persona asegurada {page_diagnosis}, es suficiente para un analisis favorable, con que unos de los veredictos sea positivo, se considera valido.
+   - Si Una pagina ya tiene un veredicto de persona asegurada, entonces no es necesario volver a verificar
+
+5. **Compilar veredicto final:**
+   - Integra los resultados de las validaciones de firma, logotipo, vigencia, número de póliza, y persona asegurada.
+   - Genera un estatus para cada categoría de la revisión en el campo details, con la siguiente estructura: `logo_validation_passed`, `signature_validation_passed`, `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
+
+# Formato de Salida
+
+Estructura el veredicto final como un párrafo que incluya la decisión de validez y las razones que apoyan cada criterio. Puede ser en un formato narrativo, proporcionando claridad y justificación de cada área evaluada.
+
+**Salida:**
+
+"La validación del documento indica que: la firma es válida ya que se detectó al menos una firma. La validación del logotipo es positiva contando con una correspondencia adecuada con la empresa especificada {enterprise}. La vigencia se confirma como válida dado que la fecha de emisión está dentro del rango especificado, además existe un número de póliza, y la persona asegurada coincide con el nombre de la persona asegurada {person}. En conclusión, todos los criterios validados han sido superados exitosamente."
+
+# Notas
+
+- Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto final, basandote en el veredicto de las páginas individuales {pages_verdicts}. 
+- Este proceso ayuda a construir una validación robusta y comprensible del documento evaluado.
+- No olvides generar un estatus para cada categoria de la revision en el campo details, con la siguiente estructura: `logo_validation_passed`, `signature_validation_passed`, `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
+"""

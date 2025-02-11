@@ -1,77 +1,15 @@
-import tempfile
-import os
-from typing import List, Optional
-import io
-import base64
-import fitz  # Importamos fitz aquí también
-from PIL import Image
 import re
+from typing import Optional, List
 from fastapi import UploadFile
-from pypdf import PdfReader  # Usando pypdf en lugar de PyPDFLoader para control granular
+
+from langchain_core.messages import SystemMessage, HumanMessage
+
+from app.agent.utils.pdf_utils import extract_pdf_text, pdf_page_to_base64_image, pdf_to_base64_images
+from app.providers.llm import LLMType
+from app.providers.llm_manager import LLMManager
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-async def extract_pdf_text_per_page(file: UploadFile) -> List[str]:
-    temp_file_path = None
-    page_contents = []
-    try:
-        # 1. Leemos el contenido del archivo subido
-        content = await file.read()
-
-        # 2. Creamos un archivo temporal
-        temp_fd, temp_file_path = tempfile.mkstemp(suffix='.pdf')
-
-        # 3. Escribimos el contenido en el archivo temporal
-        with os.fdopen(temp_fd, 'wb') as tmp_file:
-            tmp_file.write(content)
-            tmp_file.flush()
-
-        # 4. Leemos el PDF y extraemos el texto
-        reader = PdfReader(temp_file_path)
-        for page in reader.pages:
-            text = page.extract_text()
-            page_contents.append(text)
-
-    except Exception as e:
-        logger.error(f"Error extracting PDF text per page: {str(e)}")
-        raise ValueError(f"Error extracting PDF text per page: {str(e)}")
-    finally:
-        # 5. Limpieza: eliminamos el archivo temporal
-        if temp_file_path and os.path.exists(temp_file_path):
-            try:
-                os.unlink(temp_file_path)  # Elimina el archivo temporal
-            except Exception as e:
-                logger.warning(f"Could not delete temporary file {temp_file_path}: {str(e)}")
-                raise ValueError(f"Could not delete temporary file {temp_file_path}: {str(e)}")
-        await file.seek(0)  # Reiniciamos el puntero del archivo
-
-    return page_contents
-
-
-async def pdf_page_to_base64_image(file: UploadFile, page_num: int) -> str:
-    """Convierte una página específica de un PDF (UploadFile) a una imagen base64."""
-    content = await file.read()
-    memory_stream = io.BytesIO(content)
-    pdf_document = fitz.open(stream=memory_stream, filetype="pdf")
-
-    if page_num < 1 or page_num > pdf_document.page_count:
-        raise ValueError(
-            f"Número de página inválido: {page_num}. El documento tiene {pdf_document.page_count} páginas.")
-
-    page_index = page_num - 1  # fitz indexa desde 0
-    page = pdf_document[page_index]
-    pix = page.get_pixmap()
-    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-    await file.seek(0)  # Reset file pointer
-    return base64_image
-
 
 # Lista de empresas aseguradoras conocidas
 INSURANCE_COMPANIES = {
@@ -85,7 +23,6 @@ INSURANCE_COMPANIES = {
 
 def _identify_company_from_filename(filename: str) -> Optional[str]:
     """Identifica la empresa aseguradora a partir del nombre del archivo."""
-    # Se limpia y estandariza el nombre del archivo.
     clean_filename = re.sub(r'\.[^.]+$', '', filename.upper())
     clean_filename = re.sub(r'[^A-Z0-9\s]', ' ', clean_filename)
 
@@ -94,19 +31,6 @@ def _identify_company_from_filename(filename: str) -> Optional[str]:
             logger.info(f"Empresa identificada por nombre de archivo: {company}")
             return company
     return None
-
-
-async def _extract_pdf_text(file) -> str:
-    """
-    Extrae todo el texto de un PDF utilizando PyMuPDF (fitz).
-    Se asegura de reiniciar el puntero del archivo después de la lectura.
-    """
-    content = await file.read()
-    with io.BytesIO(content) as memory_stream:
-        with fitz.open(stream=memory_stream, filetype="pdf") as pdf_document:
-            text_content = [page.get_text() for page in pdf_document]
-    await file.seek(0)
-    return "\n".join(text_content)
 
 
 def _identify_company_from_text(text: str) -> Optional[str]:
@@ -120,28 +44,57 @@ def _identify_company_from_text(text: str) -> Optional[str]:
 
 
 async def extract_name_enterprise(file: UploadFile) -> str:
-    """
-    Extrae texto y metadata del PDF.
-    Primero intenta identificar la empresa a partir del nombre del archivo;
-    si no se encuentra, extrae el texto completo para identificarla.
-    """
+    """Extrae nombre de la empresa del PDF."""
     try:
-
         if not file:
             raise ValueError("No se encontró el archivo en el estado.")
 
-        # Intentar identificar la empresa por el nombre del archivo.
         company = _identify_company_from_filename(file.filename)
 
-        # Si no se identifica, extraer el texto completo del PDF y buscar en él.
-
         if not company:
-            full_text = await _extract_pdf_text(file)
+            full_text = await extract_pdf_text(file)
             company = _identify_company_from_text(full_text)
-            # Almacenar el texto extraído para posteriores procesos.
-            # state["document_data"] = full_text
 
         return company
 
     except Exception as e:
         raise ValueError(f"Error extracting text and metadata: {e}")
+
+
+async def semantic_segment_pdf_with_llm(file: UploadFile, llm_manager: LLMManager) -> List[str]:
+    """Semantically segments a specific page of a PDF document using a multimodal LLM."""
+    base64_image = await pdf_to_base64_images(file)  # Convert PDF page to base64
+    primary_llm = llm_manager.get_llm(LLMType.GPT_4O_MINI)
+
+    segmentation_prompt = """
+    Analyze the image of the PDF page and segment it into logical sections.
+    Identify sections based on semantic cues visible in the image, such as:
+    - Titles and Headings
+    - Distinct blocks of text that appear to represent separate content areas
+    - Visual separators or changes in layout that suggest new sections
+
+    **Page Image (Base64 Encoded):**
+    [Start Image] data:image/jpeg;base64,{base64_image} [End Image]
+
+    **Output Format:**
+    Return a Python list of strings. Each string should be the text content of a semantically distinct section identified in the image.
+    If no clear semantic sections are identifiable, return a list containing the entire text content of the page as a single section.
+    """
+
+    response = await primary_llm.ainvoke([
+        SystemMessage(
+            content="You are a helpful assistant for segmenting PDF pages into semantic sections based on visual analysis of the page image."),
+        HumanMessage(content=[
+            {"type": "text", "text": segmentation_prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+            # Include image in HumanMessage
+        ]),
+    ])
+
+    segmented_sections = [
+        section.strip()
+        for section in response.content.strip().split("\n\n")  # Adjust parsing if needed based on model output
+        if section.strip()
+    ]
+
+    return segmented_sections
