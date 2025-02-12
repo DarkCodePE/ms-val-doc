@@ -67,18 +67,30 @@ async def semantic_segment_pdf_with_llm(file: UploadFile, llm_manager: LLMManage
     primary_llm = llm_manager.get_llm(LLMType.GPT_4O_MINI)
 
     segmentation_prompt = """
-    Analyze the image of the PDF page and segment it into logical sections.
-    Identify sections based on semantic cues visible in the image, such as:
-    - Titles and Headings
-    - Distinct blocks of text that appear to represent separate content areas
-    - Visual separators or changes in layout that suggest new sections
+    Analyze the image of the PDF page and segment it into logical, semantically distinct sections.
+
+    Identify sections based on:
+    - Document titles and headings that indicate the start of a new section (e.g., "CONSTANCIA Nº", "Estimados Señores:", "Nº", "APELLIDOS Y NOMBRES", "Ref.:").
+    - Distinct blocks of text that serve different purposes within the document (e.g., company information, recipient details, body text, tables of data, footer).
+    - Visual separators or changes in layout if they clearly delineate different content areas (though rely more on text content for semantic segmentation).
+    - Logical flow and coherence of information. Group related text blocks together into meaningful sections.
+    
+    Specifically aim to identify and separate sections like:
+    - **Header/Company Information:**  Company logos, names, addresses, dates at the top.
+    - **Document Title/Identification:** The main title of the document (e.g., "CONSTANCIA Nº 4440435").
+    - **Recipient Information:** "Señores", company name, "Presente.-".
+    - **Reference Line:** "Ref.:" and the subject of the document.
+    - **Salutation/Greeting:** "Estimados Señores:".
+    - **Body Text/Main Content:** Paragraphs of explanatory text.
+    - **Tables of Data:**  Structured data like employee lists with columns "Nº", "APELLIDOS Y NOMBRES", "NRO. DOCUMENTO", "INICIO DE COBERTURA". Segment each table as a separate section if applicable.
+    - **Footer/Contact Information:**  Office addresses, contact numbers, website addresses at the bottom.
+    - **Signatures/Authorization Blocks:** (If present and distinct).
 
     **Page Image (Base64 Encoded):**
     [Start Image] data:image/jpeg;base64,{base64_image} [End Image]
 
     **Output Format:**
-    Return a Python list of strings. Each string should be the text content of a semantically distinct section identified in the image.
-    If no clear semantic sections are identifiable, return a list containing the entire text content of the page as a single section.
+    Return a Python list of strings. Each string should be the text content of a semantically distinct section identified in the image.  Ensure that the sections are logically separated and represent different parts of the document's information. If some parts are very short and logically belong to a larger section (e.g., "Presente.-" with "Señores"), you can include them in the larger section. If no clear semantic sections are identifiable beyond the entire document, return a list containing the entire text content of the page as a single section.
     """
 
     response = await primary_llm.ainvoke([
@@ -87,7 +99,6 @@ async def semantic_segment_pdf_with_llm(file: UploadFile, llm_manager: LLMManage
         HumanMessage(content=[
             {"type": "text", "text": segmentation_prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-            # Include image in HumanMessage
         ]),
     ])
 

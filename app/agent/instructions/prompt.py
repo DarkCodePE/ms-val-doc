@@ -76,7 +76,7 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
    - Analiza la información de la persona asegurada {person} y verifica si coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number}, debe coincidir con el numero de poliza de la persona asegurada.
    
 2. **Validación de vigencia:**
-   - Asegúrate de que la fecha de emisión {date_of_issuance} sea anterior o igual al inicio del rango de {validity} y no posterior al rango de {validity}.
+   - Asegúrate de que la fecha de emisión {date_of_issuance} no sea posterior a la fecha final del rango {validity}.
    - Verifica la existencia de al menos un número de póliza {policy_number}.
 
 2 **Compilar veredicto final:**
@@ -118,7 +118,8 @@ Estructura el veredicto final como un párrafo que incluya la decisión de valid
 - Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto final, basandote en el veredicto de las páginas individuales {pages_verdicts}. 
 - Este proceso ayuda a construir una validación robusta y comprensible del documento evaluado."""
 
-FINAL_VERDICTO_PROMPT = """ Analisa los veredictos de las páginas {pages_verdicts} y tambien la informacion del diagnostico {page_diagnosis}, luego genera un veredicto final. Los veredictos individuales debe seguir los siguientes pasos.
+FINAL_VERDICTO_PROMPT = """ 
+Analisa solo la pagina donde se encontro a la persona asegurada {page_diagnosis}, luego genera un veredicto final en base al veredicto de esta hoja {pages_verdicts}. El veredicto debe seguir los siguientes pasos.
 
 # Pasos
 
@@ -129,10 +130,10 @@ FINAL_VERDICTO_PROMPT = """ Analisa los veredictos de las páginas {pages_verdic
    - revisa toda la información relacionada con el logotipo y la empresa para confirmar la validez del logotipo {logo_diagnosis}.
 
 3. **Validación de vigencia:**
-   - revisa los veredictos de las páginas individuales y también la información para confirmar la validez de la vigencia {page_diagnosis}.
-   - revisa los veredictos de las páginas individuales y también la información para confirmar si existe al menos un número de póliza{page_diagnosis}.
+   - revisa solo el veredicto de la pagina donde se econtro a la persona asegurada {page_diagnosis}, para confirmar la validez de la vigencia {pages_verdicts}
 4. **Validación de persona:**
-   - revisa los veredictos de las páginas individuales {pages_verdicts} y también la información para confirmar si la persona asegurada coincide con el nombre de la persona asegurada {page_diagnosis}, es suficiente para un analisis favorable, con que unos de los veredictos sea positivo, se considera valido.
+   - revisa los veredictos de las páginas individuales {pages_verdicts}, es suficiente para un analisis favorable, con que unos de los veredictos sea positivo, se considera valido.
+   - Si ecuntras una persona asegurada, en al menos una pagina, entonces se considera valida !!!.
    - Si Una pagina ya tiene un veredicto de persona asegurada, entonces no es necesario volver a verificar
 
 5. **Compilar veredicto final:**
@@ -145,11 +146,10 @@ Estructura el veredicto final como un párrafo que incluya la decisión de valid
 
 **Salida:**
 
-"La validación del documento indica que: la firma es válida ya que se detectó al menos una firma. La validación del logotipo es positiva contando con una correspondencia adecuada con la empresa especificada {enterprise}. La vigencia se confirma como válida dado que la fecha de emisión está dentro del rango especificado, además existe un número de póliza, y la persona asegurada coincide con el nombre de la persona asegurada {person}. En conclusión, todos los criterios validados han sido superados exitosamente."
+"La validación del documento indica que: la firma es válida ya que se detectó al menos una firma. La validación del logotipo es positiva contando con una correspondencia adecuada con la empresa especificada {enterprise}. La vigencia solo se analisara la pagina donde se encontro a la persona, además existe un número de póliza, y la persona asegurada coincide con el nombre de la persona asegurada {person}. En conclusión, todos los criterios validados han sido superados exitosamente."
 
 # Notas
 
-- Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto final, basandote en el veredicto de las páginas individuales {pages_verdicts}. 
 - Este proceso ayuda a construir una validación robusta y comprensible del documento evaluado.
 - No olvides generar un estatus para cada categoria de la revision en el campo details, con la siguiente estructura: `logo_validation_passed`, `signature_validation_passed`, `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
 """
