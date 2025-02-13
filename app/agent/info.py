@@ -3,7 +3,6 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from app.agent.instructions.prompt import DOCUMENT_PROCESSOR
 from app.agent.loader import extract_text_with_pypdfloader
 from app.agent.state.state import DocumentValidationDetails, DocumentValidationResponse, PageContent
-from app.agent.utils.util import convertir_fecha_spanish
 from app.config.config import get_settings
 import fitz
 import io
@@ -17,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class DocumentAgent:
+class InfoAgent:
     """
    Agente para la extracción y procesamiento de documentos PDF.
    Se encarga de identificar la empresa aseguradora, extraer el contenido del documento y procesar los datos clave.
@@ -38,9 +37,9 @@ class DocumentAgent:
         )
         self.llm_manager = LLMManager(llm_config)
         # Get the primary LLM for report generation
-        self.primary_llm = self.llm_manager.get_llm(LLMType.GPT_4O_MINI)
+        self.primary_llm = self.llm_manager.get_llm(LLMType.GPT_4O)
 
-    async def document_processor(self, state: PageContent) -> dict:
+    async def info_processor(self, state: PageContent) -> dict:
 
         structured_llm = self.primary_llm.with_structured_output(DocumentValidationDetails)
 
@@ -49,14 +48,12 @@ class DocumentAgent:
             document_data=state["page_content"],
             person=state["person"]
         )
-        #print(f"Document Processor Prompt: {system_instructions}")
+
         result = structured_llm.invoke([
             SystemMessage(content=system_instructions),
             HumanMessage(
                 content="Extrae los datos clave de un documento, particularmente la vigencia (fechas o periodos), empresa, póliza")
         ])
-        #print(f"Document Processor Result: {result}")
+
         state["valid_data"] = result
-        date_issuance_format = convertir_fecha_spanish(state["valid_data"]["date_of_issuance"])
-        state["valid_data"]["date_of_issuance"] = date_issuance_format
         return state

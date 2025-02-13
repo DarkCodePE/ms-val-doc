@@ -278,11 +278,16 @@ async def validate_document(
                 status_code=400,
                 detail="Only PDF files are accepted"
             )
-        if not person_name or not person_name.strip():
+        # Validate and normalize person_name
+        normalized_name = person_name.strip()
+        if not normalized_name:
             raise HTTPException(
                 status_code=400,
                 detail="Person name is required"
             )
+
+        # Convert to uppercase and normalize spaces
+        normalized_name = " ".join(normalized_name.upper().split())
 
         # Execute workflow
         logger.info(f"Starting document validation: {file.filename}")
@@ -290,7 +295,7 @@ async def validate_document(
         state = OverallState(file_signature=file,
                              file_logo=file,
                              file=file,
-                             worker=person_name.strip())
+                             worker=normalized_name)
         component = diagnosis_graph.compile()
         result = await component.ainvoke(state)
         print(f"result: {result}")

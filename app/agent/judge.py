@@ -4,6 +4,7 @@ from app.agent.instructions.prompt import VERDICT_PROMPT, VERDICT_PAGE_PROMPT, F
     FINAL_VERDICTO_PROMPT
 from app.agent.state.state import DocumentValidationResponse, VerdictResponse, PageVerdict, OverallState, \
     VerdictDetails, PageContent, PageDiagnosis, FinalVerdictResponse, ObservationResponse
+from app.agent.utils.util import es_fecha_emision_valida
 from app.config.config import get_settings
 from app.providers.llm_manager import LLMConfig, LLMType, LLMManager
 import logging
@@ -21,7 +22,7 @@ class JudgeAgent:
             max_tokens=4000
         )
         self.llm_manager = LLMManager(llm_config)
-        self.primary_llm = self.llm_manager.get_llm(LLMType.GPT_4O_MINI)
+        self.primary_llm = self.llm_manager.get_llm(LLMType.GPT_4O)
 
     async def validate(self, state: PageContent) -> dict:
         structured_llm = self.primary_llm.with_structured_output(VerdictResponse)
@@ -29,14 +30,21 @@ class JudgeAgent:
         page_num = state["page_num"]
         enterprise = state["enterprise"]
         person = state["person"]
+        end_date_validity = valid_data["end_date_validity"]
+        start_date_validity = valid_data["start_date_validity"]
+        date_of_issuance = valid_data["date_of_issuance"]
+        validation_passed = es_fecha_emision_valida(valid_data["date_of_issuance"], valid_data["end_date_validity"])
         system_instructions = VERDICT_PAGE_PROMPT.format(
             enterprise=enterprise,
-            date_of_issuance=valid_data["date_of_issuance"],
+            date_of_issuance=date_of_issuance,
             validity=valid_data["validity"],
+            start_date_validity=start_date_validity,
+            end_date_validity=end_date_validity,
             policy_number=valid_data["policy_number"],
             page_num=page_num,
             person_by_policy=valid_data["person_by_policy"],
-            person=person
+            person=person,
+            validation_passed=validation_passed
         )
 
         result = structured_llm.invoke([
@@ -48,7 +56,8 @@ class JudgeAgent:
             valid_info=valid_data,
             page_num=page_num
         )
-
+        print(f"page_diagnosis_obj: {page_diagnosis_obj}")
+        print(f"result: {result}")
         return {
             "pages_verdicts": [result],
             "page_diagnosis": [page_diagnosis_obj]

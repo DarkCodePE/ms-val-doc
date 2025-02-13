@@ -7,7 +7,7 @@ DOCUMENT_PROCESSOR = """Valida la informacion del documento para la razon social
 
 1. **Comprender el Documento**: Lee completamente el documento para entender su contenido y estructura.
 2. **Buscar la Vigencia**: Identifica todas las menciones de fechas o periodos temporales que indiquen la vigencia del documento.
-3. **Fecha de emisión**: Busca la fecha de emisión del documento, si se encuentra, normalmente se encuentra en la parte superior del documento.
+3. **Fecha de emisión**: Busca la fecha de emisión del documento, si se encuentra, normalmente se encuentra en la parte superior del documento, pero puede estar en cualquier lugar.
 3. **Empresa**: Busca el nombre de la empresa que emite el documento, tienes que guardar el nombre de la empresa en el campo "company", difiere del nombre de la razón social {enterprise}, y el igual a logotipo.
 4. **Identificar la Empresa**: Localiza cualquier mención del nombre de una empresa que pudiera ser responsable del documento.
 5. **Encontrar Información de la Póliza**: Busca números o identificadores que se mencionen junto a las palabras 'póliza' o 'Póliza de Pensiones'.
@@ -17,6 +17,8 @@ DOCUMENT_PROCESSOR = """Valida la informacion del documento para la razon social
 
 Produce una respuesta estructurada en formato JSON con las siguientes claves:
 - "validity": [rango_fechas_o_null],
+- "start_date_validity": [fecha_inicio_o_null],
+- "end_date_validity": [fecha_fin_o_null],
 - "company": [nombre_empresa_o_rason_social_o_null],
 - "policy_number": [numeros_de_poliza_o_null],
 - "date_of_issuance": fecha_de_emision_o_null,
@@ -75,16 +77,18 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
 1. **Validación de persona:**
    - Analiza la información de la persona asegurada {person} y verifica si coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number}, debe coincidir con el numero de poliza de la persona asegurada.
    
-2. **Validación de vigencia:**
-   - Asegúrate de que la fecha de emisión {date_of_issuance} no sea posterior a la fecha final del rango {validity}.
+2. **Validación de Poliza:**
    - Verifica la existencia de al menos un número de póliza {policy_number}.
 
 2 **Compilar veredicto final:**
-   - Integra los resultados de las validaciones vigencia, número de póliza y persona asegurada.
+   - Integra los resultados de las número de póliza y persona asegurada.
    - Genera un estatus para cada categoría de la revisión: `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
+   - validity_validation_passed: Verdadero si {validation_passed}.
+   - policy_validation_passed: si existe al menos un número de póliza {policy_number}.
+   - person_validation_passed: si nombre de la persona asegurada {person} coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number} coincide con el numero de poliza de la persona asegurada. No es necesario que el nombre de la persona asegurada coincida totalmente con el nombre de la persona asegurada {person_by_policy}.
 
 # Notas
-- Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto
+- Asegúrate de considerar cada aspecto por separado  validity_validation_passed, policy_validation_passed, person_validation_passed, si alguno de estos aspectos no es valido, centra el veredicto en ese aspecto.
 """
 
 FINAL_VERDICT_PROMPT = """ Analisa los veredictos de las páginas {pages_verdicts} y tambien la informacion del diagnostico {page_diagnosis}, luego genera un veredicto final. Los veredictos individuales debe seguir los siguientes pasos.

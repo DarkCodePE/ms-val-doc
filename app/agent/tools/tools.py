@@ -24,9 +24,9 @@ def find_signature_bounding_boxes(image):
     # Calculate median area of components
     areas = stats[1:, cv2.CC_STAT_AREA]  # Exclude background
     median_area = np.median(areas)
-    print('median_area: ' + str(median_area))
+    #print('median_area: ' + str(median_area))
     median_character_width = int(math.sqrt(median_area))
-    print('median_character_width: ' + str(median_character_width))
+    #('median_character_width: ' + str(median_character_width))
 
     # Define area thresholds
     min_area_threshold = median_area * 4
@@ -41,14 +41,14 @@ def find_signature_bounding_boxes(image):
             top = stats[i, cv2.CC_STAT_TOP]
             width = stats[i, cv2.CC_STAT_WIDTH]
             height = stats[i, cv2.CC_STAT_HEIGHT]
-            print('Found candidate with area: ' + str(area))
+            #print('Found candidate with area: ' + str(area))
             # filter horizontal lines
             if height < median_character_width * 5 and width > median_character_width * 30:
-                print('   -> candidate is horizontal line with width, height: ' + str(width) + ',' + str(height))
+                #print('   -> candidate is horizontal line with width, height: ' + str(width) + ',' + str(height))
                 continue
             # filter vertical lines
             if width < median_character_width * 5 and height > median_character_width * 30:
-                print('   -> candidate is vertical line with width, height: ' + str(width) + ',' + str(height))
+                #print('   -> candidate is vertical line with width, height: ' + str(width) + ',' + str(height))
                 continue
             # filter on a ratio of black pixels (logos for example have a higher ratio) for now guestimate is 0.3
             roi = binary_image[top:top + height, left:left + width]

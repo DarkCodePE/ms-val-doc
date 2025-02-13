@@ -10,7 +10,8 @@ from app.agent.judge import JudgeAgent
 from app.agent.signature import SignatureAgent
 from app.agent.single_logo import SingleLogoAgent
 from app.agent.state.state import OverallState, PageContent
-from app.agent.utils.util import semantic_segment_pdf_with_llm, extract_name_enterprise
+from app.agent.utils.util import semantic_segment_pdf_with_llm, extract_name_enterprise, \
+    semantic_segment_pdf_with_llm_v2
 
 from app.workflow.builder.base import GraphBuilder
 import logging
@@ -49,6 +50,7 @@ class DiagnosisValidationGraph(GraphBuilder):
         #self.graph.add_edge(START, "logo_detection")
         self.graph.add_edge(START, "detect_signatures")
         self.graph.add_edge("detect_signatures", "logo_detection")
+        #self.graph..add_conditional_edges("node_a", routing_function)
         # After both signature and logo detection are done, proceed to extract_pages_content
         #self.graph.add_edge(["detect_signatures", "logo_detection"], "extract_pages_content")
         self.graph.add_edge("logo_detection", "extract_pages_content")
@@ -63,7 +65,7 @@ class DiagnosisValidationGraph(GraphBuilder):
         """Extracts page content using semantic segmentation with LLM."""
         pdf_file = state["file"]
         # Use semantic segmentation instead of page-based extraction
-        segmented_sections = await semantic_segment_pdf_with_llm(pdf_file,
+        segmented_sections = await semantic_segment_pdf_with_llm_v2(pdf_file,
                                                                  self.document.llm_manager)  # Use LLM for segmentation
         try:
             enterprise = await extract_name_enterprise(state["file"])
@@ -98,3 +100,6 @@ class DiagnosisValidationGraph(GraphBuilder):
                  )
             for page in state["page_contents"]
         ]
+    def issue_date_detection(self, state: OverallState) -> str:
+        """Detects the issue date of the document."""
+        pass

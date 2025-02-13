@@ -31,16 +31,19 @@ class PersonValidationDetails(TypedDict):
 
 
 class DocumentValidationDetails(TypedDict):
+    start_date_validity: str
+    end_date_validity: str
     validity: str
     policy_number: str
     company: str
     date_of_issuance: str
+    date_of_signature: str
     person_by_policy: PersonValidationDetails
 
 
 class VerdictDetails(TypedDict):
     logo_validation_passed: bool
-    document_validity_approved: bool
+    validity_validation_passed: bool
     signature_validation_passed: bool
     person_validation_passed: bool
 
@@ -92,7 +95,7 @@ class PageContent(TypedDict):
     valid_data: Optional[DocumentValidationDetails]
     page_diagnosis: Optional[PageDiagnosis]
     enterprise: str
-    pages_verdicts: Optional[ObservationResponse]
+    pages_verdicts: Optional[VerdictResponse]
     person: str
 
 
@@ -103,7 +106,7 @@ class OverallState(TypedDict):
     page_contents: list[PageContent]
     page_diagnosis: Annotated[List[PageDiagnosis], operator.add]
     signature_diagnosis: list[SignatureValidationDetails]
-    pages_verdicts: Annotated[List[ObservationResponse], operator.add]
+    pages_verdicts: Annotated[List[VerdictResponse], operator.add]
     final_verdict: Optional[FinalVerdictResponse]
     logo_diagnosis: list[LogoValidationDetails]
     worker: str
