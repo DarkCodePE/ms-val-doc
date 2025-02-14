@@ -69,7 +69,7 @@ class SingleLogoAgent:
         """Verify logos and store diagnosis per page."""
         try:
             base64_images = await self.pdf_to_base64_images(self, state["file_logo"])
-            logger.debug(f"Base64 images: {base64_images}")
+            #logger.debug(f"Base64 images: {base64_images}")
             logo_diagnosis_per_page: List[LogoValidationDetails] = []  # Change to PageLogoValidationDetails
             try:
                 enterprise = await extract_name_enterprise(state["file_logo"])
@@ -78,7 +78,7 @@ class SingleLogoAgent:
             document_data = await extract_pdf_text(state["file_logo"])
 
             for page_num, base64_image in enumerate(base64_images, 1):
-                logger.debug(f"Checking page {page_num} for logo")
+                #logger.debug(f"Checking page {page_num} for logo")
                 structured_llm = self.primary_llm.with_structured_output(LogoValidationDetails)
                 system_instructions = LOGO_DETECTION_PROMPT.format(
                     enterprise=enterprise,

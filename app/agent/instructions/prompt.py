@@ -91,36 +91,6 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
 - Asegúrate de considerar cada aspecto por separado  validity_validation_passed, policy_validation_passed, person_validation_passed, si alguno de estos aspectos no es valido, centra el veredicto en ese aspecto.
 """
 
-FINAL_VERDICT_PROMPT = """ Analisa los veredictos de las páginas {pages_verdicts} y tambien la informacion del diagnostico {page_diagnosis}, luego genera un veredicto final. Los veredictos individuales debe seguir los siguientes pasos.
-
-# Pasos
-
-1. **Validación de firma:**
-   - Verifica si existe al menos una firma en el documento {total_found_signatures}. Si es así, la firma es válida.
-
-2. **Validación del logotipo:**
-   - revisa toda la información relacionada con el logotipo y la empresa para confirmar la validez del logotipo.
-
-3. **Validación de vigencia:**
-   - revisa los veredictos de las páginas individuales y también la información para confirmar la validez de la vigencia.
-   - revisa los veredictos de las páginas individuales y también la información para confirmar si existe al menos un número de póliza.
-
-4. **Compilar veredicto final:**
-   - Integra los resultados de las validaciones de firma, logotipo, vigencia y número de póliza.
-   - Genera un estatus para cada categoría de la revisión: `logo_validation_passed`, `signature_validation_passed`, `validity_validation_passed`, `policy_validation_passed`.
-
-# Formato de Salida
-
-Estructura el veredicto final como un párrafo que incluya la decisión de validez y las razones que apoyan cada criterio. Puede ser en un formato narrativo, proporcionando claridad y justificación de cada área evaluada.
-
-**Salida:**
-
-"La validación del documento indica que: la firma es válida ya que se detectó al menos una firma. La validación del logotipo es positiva contando con una correspondencia adecuada con la empresa especificada. La vigencia se confirma como válida dado que la fecha de emisión está dentro del rango especificado, además existe un número de póliza. En conclusión, todos los criterios validados han sido superados exitosamente."
-
-# Notas
-
-- Asegúrate de considerar cada aspecto por separado para identificar cualquier posible error y documentar estos hallazgos en el veredicto final, basandote en el veredicto de las páginas individuales {pages_verdicts}. 
-- Este proceso ayuda a construir una validación robusta y comprensible del documento evaluado."""
 
 FINAL_VERDICTO_PROMPT = """ 
 Analisa solo la pagina donde se encontro a la persona asegurada {page_diagnosis}, luego genera un veredicto final en base al veredicto de esta hoja {pages_verdicts}. El veredicto debe seguir los siguientes pasos.
@@ -128,16 +98,17 @@ Analisa solo la pagina donde se encontro a la persona asegurada {page_diagnosis}
 # Pasos
 
 1. **Validación de firma:**
-   - Verifica si existe al menos una firma en el documento {total_found_signatures}. Si es así, la firma es válida{signature_diagnosis}.
-    - Si la firma ya existe en una pagina, entonces se considera valida.
+    - Verifica si existe al menos una firma en el documento {logo_diagnosis}. Si es asi el veredicto es positivo.
+    
 2. **Validación del logotipo:**
    - revisa toda la información relacionada con el logotipo y la empresa para confirmar la validez del logotipo {logo_diagnosis}.
 
 3. **Validación de vigencia:**
    - revisa solo el veredicto de la pagina donde se econtro a la persona asegurada {page_diagnosis}, para confirmar la validez de la vigencia {pages_verdicts}
+   
 4. **Validación de persona:**
    - revisa los veredictos de las páginas individuales {pages_verdicts}, es suficiente para un analisis favorable, con que unos de los veredictos sea positivo, se considera valido.
-   - Si ecuntras una persona asegurada, en al menos una pagina, entonces se considera valida !!!.
+   - Si encuntras una persona asegurada, en al menos una pagina, entonces se considera valida !!!.
    - Si Una pagina ya tiene un veredicto de persona asegurada, entonces no es necesario volver a verificar
 
 5. **Compilar veredicto final:**

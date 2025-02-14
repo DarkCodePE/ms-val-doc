@@ -1,6 +1,6 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.agent.instructions.prompt import VERDICT_PROMPT, VERDICT_PAGE_PROMPT, FINAL_VERDICT_PROMPT, \
+from app.agent.instructions.prompt import VERDICT_PROMPT, VERDICT_PAGE_PROMPT, \
     FINAL_VERDICTO_PROMPT
 from app.agent.state.state import DocumentValidationResponse, VerdictResponse, PageVerdict, OverallState, \
     VerdictDetails, PageContent, PageDiagnosis, FinalVerdictResponse, ObservationResponse
@@ -68,18 +68,18 @@ class JudgeAgent:
 
         pages_verdicts = state["pages_verdicts"]
         pages_diagnosis = state["page_diagnosis"]
-        signature_diagnosis = state["signature_diagnosis"]
+        #signature_diagnosis = state["signature_diagnosis"]
         logo_diagnosis = state["logo_diagnosis"]
-        total_found_signatures = sum([1 for page in signature_diagnosis if page["signature_status"]])
+        #total_found_signatures = sum([1 for page in signature_diagnosis if page["signature_status"]])
         enterprise = state["page_contents"][0]["enterprise"]
         person = state["page_contents"][0]["person"]
         structured_llm = self.primary_llm.with_structured_output(FinalVerdictResponse)
         system_instructions = FINAL_VERDICTO_PROMPT.format(
             pages_verdicts=pages_verdicts,
-            total_found_signatures=total_found_signatures,
+            #total_found_signatures=total_found_signatures,
             page_diagnosis=pages_diagnosis,
             logo_diagnosis=logo_diagnosis,
-            signature_diagnosis=signature_diagnosis,
+            #signature_diagnosis=signature_diagnosis,
             enterprise=enterprise,
             person=person
         )

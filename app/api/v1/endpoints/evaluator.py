@@ -321,8 +321,8 @@ async def validate_document(
                 }
                 for page_verdict in result["pages_verdicts"]
             ],
-            "signatures": result["signature_diagnosis"],
-            "logo": result["logo_diagnosis"],
+            #"signatures": result["signature_diagnosis"],
+            "validation_images": result["logo_diagnosis"],
             "final_verdict": result["final_verdict"]
         }
 

@@ -48,11 +48,12 @@ class DiagnosisValidationGraph(GraphBuilder):
         # Parallel branches for signature and logo detection
         #self.graph.add_edge(START, "detect_signatures")
         #self.graph.add_edge(START, "logo_detection")
-        self.graph.add_edge(START, "detect_signatures")
-        self.graph.add_edge("detect_signatures", "logo_detection")
+        #self.graph.add_edge(START, "detect_signatures")
+        #self.graph.add_edge("detect_signatures", "logo_detection")
         #self.graph..add_conditional_edges("node_a", routing_function)
         # After both signature and logo detection are done, proceed to extract_pages_content
         #self.graph.add_edge(["detect_signatures", "logo_detection"], "extract_pages_content")
+        self.graph.add_edge(START, "logo_detection")
         self.graph.add_edge("logo_detection", "extract_pages_content")
         self.graph.add_conditional_edges("extract_pages_content",
                                          self.generate_pages_to_validate,
