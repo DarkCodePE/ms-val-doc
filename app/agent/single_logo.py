@@ -107,10 +107,11 @@ class SingleLogoAgent:
                     logo=response["logo"],
                     logo_status=response["logo_status"],
                     diagnostics=response["diagnostics"],
+                    signature_status=response["signature_status"],
                     page_num=page_num  # Add page_num here
                 )
                 logo_diagnosis_per_page.append(page_logo_detail)  # Append PageLogoValidationDetails
-            state["enterprise"] = enterprise
+            #state["enterprise"] = enterprise
             state["logo_diagnosis"] = logo_diagnosis_per_page  # Store the list of PageLogoValidationDetails
             return state
 

@@ -10,6 +10,7 @@ class LogoValidationDetails(TypedDict):
     logo_status: bool
     diagnostics: str
     page_num: int
+    signature_status: bool
 
 
 class SignatureMetadata(TypedDict):

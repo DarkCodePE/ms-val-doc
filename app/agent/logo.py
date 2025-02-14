@@ -52,7 +52,7 @@ class LogoAgent:
                 content=[
                     {
                         "type": "text",
-                        "text": "Identifica si hay logotipo en esta página. "
+                        "text": "Identifica si hay logotipo y firma en esta página. "
                     },
                     {
                         "type": "image_url",

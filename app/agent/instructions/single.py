@@ -27,18 +27,21 @@ Produce una respuesta estructurada en formato JSON con las siguientes claves:
 
 LOGO_DETECTION_PROMPT = """Validar si el logotipo de la empresa dentro de un documento y corresponde a la empresa {enterprise}.
 
-Revise el documento para asegurar que el logotipo del mismo es coherente con los datos {document_data} de la empresa.
+Revise el documento para asegurar que el logotipo del mismo es coherente con los datos {document_data} de la empresa y la firma existe en el documento.
 
 # Pasos
 
 1. **Extraer el Logo**: Identificar y extraer el logotipo presente en el documento.
 2. **Comparar Logotipo y Datos**: Correlacione el logotipo extraído con los datos recopilados para garantizar su coherencia, verificando cualquier elemento distintivo de la marca.
-3. **Conclusión**: Determine si el logotipo es concordante con los datos validados previamente.
+3. **Verificar la Firma**: Busque y valide la existencia de firmas dentro del documento.
+4. **Conclusión**: Determine si el logotipo es concordante con los datos validados previamente y la firma existe en el documento.
 
 # Notas
 
 - Considere las variaciones de diseño que podrían existir en el logotipo oficial de la empresa.
-- Solo responda si el logotipo coincide y se encuentra presente."""
+- Solo responda si el logotipo coincide y se encuentra presente.
+- Solo responda si la firma se encuentra presente en el documento.
+- el diagnostioco dene reflejar si el logotipo coincide con la empresa y si la firma se encuentra en el documento."""
 
 VERDICT_PROMPT = """Elaborar un veredicto organizado y preciso basado en diversos aspectos de la validación de documentos, incluida la validación del logotipo, la validez del documento y la detección de firmas.
 
