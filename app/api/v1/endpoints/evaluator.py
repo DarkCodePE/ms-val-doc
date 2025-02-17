@@ -257,6 +257,7 @@ async def extract_pdf_text(file: UploadFile) -> str:
 async def validate_document(
         file: UploadFile = File(...),
         person_name: str = Form(...),
+        user_date: str = Form(None),
         db: Session = Depends(get_db),
 ):
     """
@@ -295,7 +296,8 @@ async def validate_document(
         state = OverallState(file_signature=file,
                              file_logo=file,
                              file=file,
-                             worker=normalized_name)
+                             worker=normalized_name,
+                             user_date=user_date)
         component = diagnosis_graph.compile()
         result = await component.ainvoke(state)
         print(f"result: {result}")

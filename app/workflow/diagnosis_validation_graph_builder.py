@@ -67,13 +67,14 @@ class DiagnosisValidationGraph(GraphBuilder):
         pdf_file = state["file"]
         # Use semantic segmentation instead of page-based extraction
         segmented_sections = await semantic_segment_pdf_with_llm_v2(pdf_file,
-                                                                 self.document.llm_manager)  # Use LLM for segmentation
+                                                                    self.document.llm_manager)  # Use LLM for segmentation
         try:
             enterprise = await extract_name_enterprise(state["file"])
         except Exception as e:
             enterprise = ""
 
         person = state["worker"]
+        user_date = state["user_date"]
         page_content_list: List[PageContent] = []
         for i, content in enumerate(segmented_sections):  # Iterate over segmented sections now
             page_num = i + 1
@@ -83,7 +84,8 @@ class DiagnosisValidationGraph(GraphBuilder):
                 valid_data=None,
                 pages_verdicts=None,
                 enterprise=enterprise,
-                person=person
+                person=person,
+                reference_date=user_date
             )
             page_content_list.append(page_content)
 
@@ -97,10 +99,12 @@ class DiagnosisValidationGraph(GraphBuilder):
                   "enterprise": page["enterprise"],
                   "valid_data": page["valid_data"],
                   "page_num": page["page_num"],
-                  "person": page["person"]}
+                  "person": page["person"],
+                  "reference_date": page["reference_date"]}
                  )
             for page in state["page_contents"]
         ]
+
     def issue_date_detection(self, state: OverallState) -> str:
         """Detects the issue date of the document."""
         pass

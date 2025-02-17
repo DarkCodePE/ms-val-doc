@@ -49,6 +49,12 @@ class VerdictDetails(TypedDict):
     person_validation_passed: bool
 
 
+class VerdictPageDetails(TypedDict):
+    validity_validation_passed: bool
+    policy_validation_passed: bool
+    person_validation_passed: bool
+
+
 class SignatureInfo(TypedDict):
     has_signature_page: bool
     total_found_page: int
@@ -63,7 +69,7 @@ class PageDiagnosis(TypedDict):
 class VerdictResponse(TypedDict):
     verdict: bool
     reason: str
-    details: VerdictDetails
+    details: VerdictPageDetails
     page_num: int
 
 
@@ -73,7 +79,7 @@ class ObservationResponse(TypedDict):
 
 
 class FinalVerdictResponse(TypedDict):
-    verdict: bool
+    verdict: str
     reason: str
     details: VerdictDetails
 
@@ -98,6 +104,7 @@ class PageContent(TypedDict):
     enterprise: str
     pages_verdicts: Optional[VerdictResponse]
     person: str
+    reference_date: str
 
 
 class OverallState(TypedDict):
@@ -111,3 +118,4 @@ class OverallState(TypedDict):
     final_verdict: Optional[FinalVerdictResponse]
     logo_diagnosis: list[LogoValidationDetails]
     worker: str
+    user_date: Optional[str]

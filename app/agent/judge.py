@@ -4,7 +4,8 @@ from app.agent.instructions.prompt import VERDICT_PROMPT, VERDICT_PAGE_PROMPT, \
     FINAL_VERDICTO_PROMPT
 from app.agent.state.state import DocumentValidationResponse, VerdictResponse, PageVerdict, OverallState, \
     VerdictDetails, PageContent, PageDiagnosis, FinalVerdictResponse, ObservationResponse
-from app.agent.utils.util import es_fecha_emision_valida
+from app.agent.utils.util import es_fecha_emision_valida, es_fecha_vigencia_valida, convertir_fecha_spanish, \
+    convertir_fecha_spanish_v2
 from app.config.config import get_settings
 from app.providers.llm_manager import LLMConfig, LLMType, LLMManager
 import logging
@@ -32,8 +33,14 @@ class JudgeAgent:
         person = state["person"]
         end_date_validity = valid_data["end_date_validity"]
         start_date_validity = valid_data["start_date_validity"]
-        date_of_issuance = valid_data["date_of_issuance"]
-        validation_passed = es_fecha_emision_valida(valid_data["date_of_issuance"], valid_data["end_date_validity"])
+        date_of_issuance = convertir_fecha_spanish_v2(valid_data["date_of_issuance"])
+        print(f"date_of_issuance: {date_of_issuance}")
+        validation_passed = es_fecha_emision_valida(date_of_issuance, valid_data["end_date_validity"])
+        reference_date = state["reference_date"]
+        #print(f"reference_date: {reference_date}")
+        validity_passed = es_fecha_vigencia_valida(end_date_validity, reference_date)
+        print(f"validity_passed: {validity_passed}")
+
         system_instructions = VERDICT_PAGE_PROMPT.format(
             enterprise=enterprise,
             date_of_issuance=date_of_issuance,
@@ -44,7 +51,8 @@ class JudgeAgent:
             page_num=page_num,
             person_by_policy=valid_data["person_by_policy"],
             person=person,
-            validation_passed=validation_passed
+            validation_passed=validation_passed,
+            validity_passed=validity_passed
         )
 
         result = structured_llm.invoke([

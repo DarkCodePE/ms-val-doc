@@ -216,6 +216,66 @@ def convertir_fecha_spanish(fecha_str: str) -> str:
         return fecha_str  # En caso de un formato inesperado
 
 
+def convertir_fecha_spanish_v2(fecha_str: str) -> str:
+    """
+    Convierte fechas en español a formato dd/mm/yyyy.
+    Maneja múltiples formatos:
+    - '31 de enero de 2024'
+    - '31 de enero del 2024'
+    - '23 de Enero del 2025'
+    """
+    # Mapeo de meses en español a números
+    meses = {
+        "enero": "01",
+        "febrero": "02",
+        "marzo": "03",
+        "abril": "04",
+        "mayo": "05",
+        "junio": "06",
+        "julio": "07",
+        "agosto": "08",
+        "septiembre": "09",
+        "octubre": "10",
+        "noviembre": "11",
+        "diciembre": "12"
+    }
+
+    try:
+        # Normalizar la cadena: convertir a minúsculas y manejar 'del' o 'de'
+        fecha_str = fecha_str.lower().replace(" del ", " de ")
+
+        # Separar por "de"
+        partes = fecha_str.split(" de ")
+
+        if len(partes) >= 2:  # Tenemos al menos día y mes
+            dia = partes[0].strip()
+            mes_palabra = partes[1].strip()
+
+            # Extraer el año de la última parte
+            anio = partes[-1].strip()
+
+            # Convertir mes a número
+            mes = meses.get(mes_palabra.lower(), "00")
+
+            # Asegurar que el día tenga dos dígitos
+            dia = f"0{dia}" if len(dia) == 1 else dia
+
+            # Validar componentes
+            try:
+                dia_int = int(dia)
+                anio_int = int(anio)
+                if not (1 <= dia_int <= 31 and 1900 <= anio_int <= 2100):
+                    raise ValueError("Día o año fuera de rango")
+            except ValueError as e:
+                raise ValueError(f"Formato de fecha inválido: {str(e)}")
+
+            return f"{dia}/{mes}/{anio}"
+    except Exception as e:
+        raise ValueError(f"Error al convertir fecha '{fecha_str}': {str(e)}")
+
+    # Si no se pudo convertir, devolver error
+    raise ValueError(f"Formato de fecha no reconocido: {fecha_str}")
+
 def es_fecha_emision_valida(date_of_issuance: str, end_date_validity: str) -> bool:
     """
     Compara si la fecha de emisión (date_of_issuance) no es mayor que la fecha fin de vigencia (end_date_validity).
@@ -224,3 +284,35 @@ def es_fecha_emision_valida(date_of_issuance: str, end_date_validity: str) -> bo
     fecha_emision = datetime.strptime(date_of_issuance, "%d/%m/%Y")
     fecha_fin_vigencia = datetime.strptime(end_date_validity, "%d/%m/%Y")
     return fecha_emision <= fecha_fin_vigencia
+
+
+def es_fecha_vigencia_valida(end_date_validity: str, reference_date: str = None) -> bool:
+    """
+    Valida que la fecha fin de vigencia (end_date_validity) en formato "dd/mm/yyyy"
+    no esté vencida respecto a una fecha de referencia.
+    Si no se suministra reference_date, se utiliza la fecha actual.
+    """
+    fecha_fin_vigencia = datetime.strptime(end_date_validity, "%d/%m/%Y")
+    if reference_date is None:
+        ref_date = datetime.now()
+    else:
+        ref_date = datetime.strptime(reference_date, "%d/%m/%Y")
+    return ref_date <= fecha_fin_vigencia
+
+
+def es_fecha_emision_valida_compile(date_of_issuance: str, end_date_validity: str, reference_date: str = None) -> bool:
+    """
+    Valida que:
+    1. La fecha de emisión (date_of_issuance) en formato "dd/mm/yyyy" no sea posterior a la fecha fin de vigencia (end_date_validity).
+    2. La fecha fin de vigencia no esté vencida respecto a una fecha de referencia.
+       Si no se suministra reference_date, se asume la fecha actual.
+    """
+    fecha_emision = datetime.strptime(date_of_issuance, "%d/%m/%Y")
+    fecha_fin_vigencia = datetime.strptime(end_date_validity, "%d/%m/%Y")
+
+    if reference_date is None:
+        ref_date = datetime.now()
+    else:
+        ref_date = datetime.strptime(reference_date, "%d/%m/%Y")
+
+    return fecha_emision <= fecha_fin_vigencia and ref_date <= fecha_fin_vigencia

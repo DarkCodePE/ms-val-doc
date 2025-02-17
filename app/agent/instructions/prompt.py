@@ -79,15 +79,16 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
    
 2. **Validación de Poliza:**
    - Verifica la existencia de al menos un número de póliza {policy_number}.
-
-2 **Compilar veredicto final:**
+    
+3. **Compilar veredicto final:**
    - Integra los resultados de las número de póliza y persona asegurada.
    - Genera un estatus para cada categoría de la revisión: `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
-   - validity_validation_passed: Verdadero si {validation_passed}.
+   - validity_validation_passed: Es Verdadero si ambos criterios son verdadero {validation_passed} y {validity_passed}.
    - policy_validation_passed: si existe al menos un número de póliza {policy_number}.
    - person_validation_passed: si nombre de la persona asegurada {person} coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number} coincide con el numero de poliza de la persona asegurada. No es necesario que el nombre de la persona asegurada coincida totalmente con el nombre de la persona asegurada {person_by_policy}.
 
 # Notas
+- Para resolver la validación de la vigencia, toma en cuenta los siguientes aspectos: si validity_passed es falso, entonces la vigencia no es valida respecto a una fecha de referencia y si validation_passed es falso, entonces la vigencia no es valida respecto a la fecha de emisión. Pero ambos criterios deben ser verdaderos para que la vigencia sea valida !!!.
 - Asegúrate de considerar cada aspecto por separado  validity_validation_passed, policy_validation_passed, person_validation_passed, si alguno de estos aspectos no es valido, centra el veredicto en ese aspecto.
 """
 
@@ -104,7 +105,7 @@ Analisa solo la pagina donde se encontro a la persona asegurada {page_diagnosis}
    - revisa toda la información relacionada con el logotipo y la empresa para confirmar la validez del logotipo {logo_diagnosis}.
 
 3. **Validación de vigencia:**
-   - revisa solo el veredicto de la pagina donde se econtro a la persona asegurada {page_diagnosis}, para confirmar la validez de la vigencia {pages_verdicts}
+   - revisa solo el veredicto de la pagina donde se encontro a la persona asegurada {page_diagnosis}, para confirmar la validez de la vigencia {pages_verdicts}
    
 4. **Validación de persona:**
    - revisa los veredictos de las páginas individuales {pages_verdicts}, es suficiente para un analisis favorable, con que unos de los veredictos sea positivo, se considera valido.
@@ -119,12 +120,16 @@ Analisa solo la pagina donde se encontro a la persona asegurada {page_diagnosis}
 
 Estructura el veredicto final como un párrafo que incluya la decisión de validez y las razones que apoyan cada criterio. Puede ser en un formato narrativo, proporcionando claridad y justificación de cada área evaluada.
 
-**Salida:**
+**verdict:**
 
-"La validación del documento indica que: la firma es válida ya que se detectó al menos una firma. La validación del logotipo es positiva contando con una correspondencia adecuada con la empresa especificada {enterprise}. La vigencia solo se analisara la pagina donde se encontro a la persona, además existe un número de póliza, y la persona asegurada coincide con el nombre de la persona asegurada {person}. En conclusión, todos los criterios validados han sido superados exitosamente."
+Debe clasificar el documento como válido, observado o no válido. Siguiendo los siguientes criterios:
+
+- La primera parte valida el `{logo_diagnosis}` resaltando datos del logotipo y la firma. Si esta primera parte de validación es negativa, el documento estará observado.
+- La segunda parte evalúa `{pages_verdicts}` para validar vigencia, número de póliza y persona asegurada.Si esta segunda parte de validación es negativa, el documento sera catalogado como no válido.
+- Si ambas partes son positivas, el documento es válido.
 
 # Notas
-
+- El veredicto final debe estar en español, debe ser claro y conciso !!!.
 - Este proceso ayuda a construir una validación robusta y comprensible del documento evaluado.
 - No olvides generar un estatus para cada categoria de la revision en el campo details, con la siguiente estructura: `logo_validation_passed`, `signature_validation_passed`, `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
 """
