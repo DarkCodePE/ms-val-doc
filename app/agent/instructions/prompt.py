@@ -83,12 +83,12 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
 3. **Compilar veredicto final:**
    - Integra los resultados de las número de póliza y persona asegurada.
    - Genera un estatus para cada categoría de la revisión: `validity_validation_passed`, `policy_validation_passed`, `person_validation_passed`.
-   - validity_validation_passed: Es Verdadero si ambos criterios son verdadero {validation_passed} y {validity_passed}.
-   - policy_validation_passed: si existe al menos un número de póliza {policy_number}.
+   - validity_validation_passed: Es Verdadero si ambos criterios son verdadero {validation_passed} y {validity_passed}.Explica los motivos en caso de que no se cumpla.
+   - policy_validation_passed: si existe al menos un número de póliza {policy_number}. Debes explicar el criterio que no se cumple, en caso de que no se cumpla.
    - person_validation_passed: si nombre de la persona asegurada {person} coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number} coincide con el numero de poliza de la persona asegurada. No es necesario que el nombre de la persona asegurada coincida totalmente con el nombre de la persona asegurada {person_by_policy}.
 
 # Notas
-- Para resolver la validación de la vigencia, toma en cuenta los siguientes aspectos: si validity_passed es falso, entonces la vigencia no es valida respecto a una fecha de referencia y si validation_passed es falso, entonces la vigencia no es valida respecto a la fecha de emisión. Pero ambos criterios deben ser verdaderos para que la vigencia sea valida !!!.
+- Para resolver la validación de la vigencia, toma en cuenta los siguientes aspectos: si {validity_passed} es falso, entonces la vigencia no es valida respecto a una fecha de referencia y si {validation_passed} es falso, entonces la vigencia no es valida respecto a la fecha de emisión. Pero ambos criterios deben ser verdaderos para que la vigencia sea valida !!!.
 - Asegúrate de considerar cada aspecto por separado  validity_validation_passed, policy_validation_passed, person_validation_passed, si alguno de estos aspectos no es valido, centra el veredicto en ese aspecto.
 """
 

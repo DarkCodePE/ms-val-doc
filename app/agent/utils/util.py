@@ -219,12 +219,12 @@ def convertir_fecha_spanish(fecha_str: str) -> str:
 def convertir_fecha_spanish_v2(fecha_str: str) -> str:
     """
     Convierte fechas en español a formato dd/mm/yyyy.
-    Maneja múltiples formatos:
-    - '31 de enero de 2024'
-    - '31 de enero del 2024'
-    - '23 de Enero del 2025'
+    Maneja múltiples formatos, por ejemplo:
+      - "31 de enero de 2024"
+      - "31 de enero del 2024"
+      - "23 de Enero del 2025"
+    Si el formato no es reconocido, devuelve la fecha original.
     """
-    # Mapeo de meses en español a números
     meses = {
         "enero": "01",
         "febrero": "02",
@@ -242,39 +242,30 @@ def convertir_fecha_spanish_v2(fecha_str: str) -> str:
 
     try:
         # Normalizar la cadena: convertir a minúsculas y manejar 'del' o 'de'
-        fecha_str = fecha_str.lower().replace(" del ", " de ")
+        fecha_str_norm = fecha_str.lower().replace(" del ", " de ")
+        partes = fecha_str_norm.split(" de ")
 
-        # Separar por "de"
-        partes = fecha_str.split(" de ")
-
-        if len(partes) >= 2:  # Tenemos al menos día y mes
+        # Se espera al menos: día, mes y año
+        if len(partes) >= 3:
             dia = partes[0].strip()
             mes_palabra = partes[1].strip()
-
-            # Extraer el año de la última parte
             anio = partes[-1].strip()
-
-            # Convertir mes a número
-            mes = meses.get(mes_palabra.lower(), "00")
-
+            mes = meses.get(mes_palabra)
+            if mes is None:
+                # Si el nombre del mes no es reconocido, devolver la fecha original
+                return fecha_str
             # Asegurar que el día tenga dos dígitos
-            dia = f"0{dia}" if len(dia) == 1 else dia
-
-            # Validar componentes
-            try:
-                dia_int = int(dia)
-                anio_int = int(anio)
-                if not (1 <= dia_int <= 31 and 1900 <= anio_int <= 2100):
-                    raise ValueError("Día o año fuera de rango")
-            except ValueError as e:
-                raise ValueError(f"Formato de fecha inválido: {str(e)}")
-
+            if len(dia) == 1:
+                dia = f"0{dia}"
+            # Validar que día y año sean números
+            int(dia)
+            int(anio)
             return f"{dia}/{mes}/{anio}"
-    except Exception as e:
-        raise ValueError(f"Error al convertir fecha '{fecha_str}': {str(e)}")
-
-    # Si no se pudo convertir, devolver error
-    raise ValueError(f"Formato de fecha no reconocido: {fecha_str}")
+        else:
+            return fecha_str
+    except Exception:
+        # En caso de error, se devuelve la cadena original sin modificar
+        return fecha_str
 
 def es_fecha_emision_valida(date_of_issuance: str, end_date_validity: str) -> bool:
     """
