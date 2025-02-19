@@ -89,6 +89,7 @@ class DiagnosisValidationGraph(GraphBuilder):
             )
             page_content_list.append(page_content)
 
+        print("Page content list: ", page_content_list)
         return {"page_contents": page_content_list}
 
     def generate_pages_to_validate(self, state: OverallState) -> list[Send]:
