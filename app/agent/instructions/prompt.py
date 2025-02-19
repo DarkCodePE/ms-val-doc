@@ -75,7 +75,7 @@ VERDICT_PAGE_PROMPT = """Elaborar un veredicto organizado y preciso basado en di
 # Pasos
 
 1. **Validación de persona:**
-   - Analiza la información de la persona asegurada {person} y verifica si coincide con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number}, debe coincidir con el numero de poliza de la persona asegurada.
+   - Analiza la información de la persona asegurada {person} y verifica si coincide al menos un nombre y un apellido, con el nombre de la persona asegurada {person_by_policy}, y la poliza {policy_number}, debe coincidir con el numero de poliza de la persona asegurada.
    
 2. **Validación de Poliza:**
    - Verifica la existencia de al menos un número de póliza {policy_number}.

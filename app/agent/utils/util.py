@@ -288,6 +288,8 @@ def es_fecha_vigencia_valida(end_date_validity: str, reference_date: str = None)
         ref_date = datetime.now()
     else:
         ref_date = datetime.strptime(reference_date, "%d/%m/%Y")
+
+    print(f"ref_date: {ref_date}")
     return ref_date <= fecha_fin_vigencia
 
 

@@ -34,14 +34,14 @@ class JudgeAgent:
         end_date_validity = convertir_fecha_spanish_v2(valid_data["end_date_validity"])
         start_date_validity = convertir_fecha_spanish_v2(valid_data["start_date_validity"])
         date_of_issuance = convertir_fecha_spanish_v2(valid_data["date_of_issuance"])
-        print(f"date_of_issuance: {date_of_issuance}")
-        print(f"end_date_validity: {end_date_validity}")
-        print(f"start_date_validity: {start_date_validity}")
+        #print(f"date_of_issuance: {date_of_issuance}")
+        #print(f"end_date_validity: {end_date_validity}")
+        #print(f"start_date_validity: {start_date_validity}")
         validation_passed = es_fecha_emision_valida(date_of_issuance, end_date_validity)
         reference_date = state["reference_date"]
         #print(f"reference_date: {reference_date}")
         validity_passed = es_fecha_vigencia_valida(end_date_validity, reference_date)
-        print(f"validity_passed: {validity_passed}")
+        #print(f"validity_passed: {validity_passed}")
 
         system_instructions = VERDICT_PAGE_PROMPT.format(
             enterprise=enterprise,
