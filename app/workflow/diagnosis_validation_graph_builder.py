@@ -11,7 +11,7 @@ from app.agent.signature import SignatureAgent
 from app.agent.single_logo import SingleLogoAgent
 from app.agent.state.state import OverallState, PageContent
 from app.agent.utils.util import semantic_segment_pdf_with_llm, extract_name_enterprise, \
-    semantic_segment_pdf_with_llm_v2
+    semantic_segment_pdf_with_llm_v2, count_pdf_pages, semantic_segment_pdf_with_llm_v3
 
 from app.workflow.builder.base import GraphBuilder
 import logging
@@ -55,6 +55,7 @@ class DiagnosisValidationGraph(GraphBuilder):
         #self.graph.add_edge(["detect_signatures", "logo_detection"], "extract_pages_content")
         self.graph.add_edge(START, "logo_detection")
         self.graph.add_edge("logo_detection", "extract_pages_content")
+        #self.graph.add_edge(START, "extract_pages_content")
         self.graph.add_conditional_edges("extract_pages_content",
                                          self.generate_pages_to_validate,
                                          ["validate_page"]
@@ -65,15 +66,23 @@ class DiagnosisValidationGraph(GraphBuilder):
     async def extract_pages_content(self, state: OverallState) -> dict:
         """Extracts page content using semantic segmentation with LLM."""
         pdf_file = state["file"]
-        # Use semantic segmentation instead of page-based extraction
-        segmented_sections = await semantic_segment_pdf_with_llm_v2(pdf_file,
-                                                                    self.document.llm_manager)  # Use LLM for segmentation
+        total_pages = await count_pdf_pages(pdf_file)
+        if total_pages > 1:
+            # Use semantic segmentation instead of page-based extraction
+            segmented_sections = await semantic_segment_pdf_with_llm_v2(pdf_file,
+                                                                        self.document.llm_manager)  # Use LLM for segmentation
+        else:
+            # Use page-based extraction
+            segmented_sections = await semantic_segment_pdf_with_llm_v3(pdf_file,
+                                                                        self.document.llm_manager)
+
         try:
             enterprise = await extract_name_enterprise(state["file"])
         except Exception as e:
             enterprise = ""
 
         person = state["worker"]
+        document_type = state["worker_type"]
         user_date = state["user_date"]
         page_content_list: List[PageContent] = []
         for i, content in enumerate(segmented_sections):  # Iterate over segmented sections now
@@ -85,7 +94,8 @@ class DiagnosisValidationGraph(GraphBuilder):
                 pages_verdicts=None,
                 enterprise=enterprise,
                 person=person,
-                reference_date=user_date
+                reference_date=user_date,
+                document_type=document_type
             )
             page_content_list.append(page_content)
 
@@ -101,7 +111,8 @@ class DiagnosisValidationGraph(GraphBuilder):
                   "valid_data": page["valid_data"],
                   "page_num": page["page_num"],
                   "person": page["person"],
-                  "reference_date": page["reference_date"]}
+                  "reference_date": page["reference_date"],
+                  "document_type": page["document_type"]}
                  )
             for page in state["page_contents"]
         ]

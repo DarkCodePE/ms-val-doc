@@ -4,7 +4,6 @@ from typing import List, Optional, Annotated, Dict
 from typing_extensions import TypedDict
 import operator
 
-
 class LogoValidationDetails(TypedDict):
     logo: str
     logo_status: bool
@@ -105,6 +104,7 @@ class PageContent(TypedDict):
     pages_verdicts: Optional[VerdictResponse]
     person: str
     reference_date: str
+    document_type: str
 
 
 class OverallState(TypedDict):
@@ -118,4 +118,15 @@ class OverallState(TypedDict):
     final_verdict: Optional[FinalVerdictResponse]
     logo_diagnosis: list[LogoValidationDetails]
     worker: str
+    worker_type: str
     user_date: Optional[str]
+
+class PersonInfo(TypedDict):
+    name: str
+    policy_number: str
+    company: str
+class DataExtracted(BaseModel):
+    extracted_text: str
+    valid_range: str
+    logo_and_signature: Optional[List[LogoValidationDetails]]
+    table_data: Optional[DocumentValidationDetails]

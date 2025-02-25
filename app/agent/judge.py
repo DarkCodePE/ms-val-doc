@@ -31,6 +31,7 @@ class JudgeAgent:
         page_num = state["page_num"]
         enterprise = state["enterprise"]
         person = state["person"]
+        page_content = state["page_content"]
         end_date_validity = convertir_fecha_spanish_v2(valid_data["end_date_validity"])
         start_date_validity = convertir_fecha_spanish_v2(valid_data["start_date_validity"])
         date_of_issuance = convertir_fecha_spanish_v2(valid_data["date_of_issuance"])
@@ -41,7 +42,7 @@ class JudgeAgent:
         reference_date = state["reference_date"]
         #print(f"reference_date: {reference_date}")
         validity_passed = es_fecha_vigencia_valida(end_date_validity, reference_date)
-        #print(f"validity_passed: {validity_passed}")
+        print(f"validity_passed: {validity_passed}")
 
         system_instructions = VERDICT_PAGE_PROMPT.format(
             enterprise=enterprise,
@@ -51,7 +52,7 @@ class JudgeAgent:
             end_date_validity=end_date_validity,
             policy_number=valid_data["policy_number"],
             page_num=page_num,
-            person_by_policy=valid_data["person_by_policy"],
+            page_content=page_content,
             person=person,
             validation_passed=validation_passed,
             validity_passed=validity_passed
@@ -66,8 +67,8 @@ class JudgeAgent:
             valid_info=valid_data,
             page_num=page_num
         )
-        print(f"page_diagnosis_obj: {page_diagnosis_obj}")
-        print(f"result: {result}")
+        #print(f"page_diagnosis_obj: {page_diagnosis_obj}")
+        #print(f"result: {result}")
         return {
             "pages_verdicts": [result],
             "page_diagnosis": [page_diagnosis_obj]

@@ -1,6 +1,6 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.agent.instructions.prompt import DOCUMENT_PROCESSOR
+from app.agent.instructions.prompt import DOCUMENT_PROCESSOR, DOCUMENT_PROCESSOR_DNI
 from app.agent.loader import extract_text_with_pypdfloader
 from app.agent.state.state import DocumentValidationDetails, DocumentValidationResponse, PageContent
 from app.agent.utils.util import convertir_fecha_spanish
@@ -41,14 +41,25 @@ class DocumentAgent:
         self.primary_llm = self.llm_manager.get_llm(LLMType.GPT_4O_MINI)
 
     async def document_processor(self, state: PageContent) -> dict:
-
+        person_identifier = state["document_type"]
         structured_llm = self.primary_llm.with_structured_output(DocumentValidationDetails)
-
-        system_instructions = DOCUMENT_PROCESSOR.format(
-            enterprise=state["enterprise"],
-            document_data=state["page_content"],
-            person=state["person"]
-        )
+        if person_identifier == "dni":
+            system_instructions = DOCUMENT_PROCESSOR_DNI.format(
+                enterprise=state["enterprise"],
+                document_data=state["page_content"],
+                person_identifier=state["person"]
+            )
+        else:
+            system_instructions = DOCUMENT_PROCESSOR.format(
+                enterprise=state["enterprise"],
+                document_data=state["page_content"],
+                person=state["person"]
+            )
+        # system_instructions = DOCUMENT_PROCESSOR.format(
+        #     enterprise=state["enterprise"],
+        #     document_data=state["page_content"],
+        #     person=state["person"],
+        # )
         #print(f"Document Processor Prompt: {system_instructions}")
         result = structured_llm.invoke([
             SystemMessage(content=system_instructions),

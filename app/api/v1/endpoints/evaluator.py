@@ -1,6 +1,7 @@
 import tempfile
 from datetime import datetime
 from typing import List, Tuple
+import re
 
 import cv2
 from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter, Depends, Form
@@ -279,16 +280,29 @@ async def validate_document(
                 status_code=400,
                 detail="Only PDF files are accepted"
             )
+
         # Validate and normalize person_name
-        normalized_name = person_name.strip()
-        if not normalized_name:
+        input_value = person_name.strip()
+        if not input_value:
             raise HTTPException(
                 status_code=400,
-                detail="Person name is required"
+                detail="Person name or DNI is required"
             )
 
-        # Convert to uppercase and normalize spaces
-        normalized_name = " ".join(normalized_name.upper().split())
+        # Determine if the input is a DNI (8 digits) or a name
+        is_dni = bool(re.match(r'^\d{8}$', input_value))
+
+        # Different formatting based on type
+        if is_dni:
+            # Store the DNI directly
+            input_type = "dni"
+            normalized_value = input_value
+            logger.info(f"Identified input as DNI: {normalized_value}")
+        else:
+            # Format as name - convert to uppercase and normalize spaces
+            input_type = "name"
+            normalized_value = " ".join(input_value.upper().split())
+            logger.info(f"Identified input as name: {normalized_value}")
 
         # Execute workflow
         logger.info(f"Starting document validation: {file.filename}")
@@ -296,11 +310,12 @@ async def validate_document(
         state = OverallState(file_signature=file,
                              file_logo=file,
                              file=file,
-                             worker=normalized_name,
+                             worker=normalized_value,
+                             worker_type=input_type,
                              user_date=user_date)
         component = diagnosis_graph.compile()
         result = await component.ainvoke(state)
-        print(f"result: {result}")
+        #print(f"result: {result}")
 
         # Format response
         response = {
